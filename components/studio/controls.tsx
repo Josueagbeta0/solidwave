@@ -118,12 +118,12 @@ export function Slider({
       >
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,#39e1ff1f,#5b7cff33)] transition-[width] duration-75"
+          className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,#2f5bff1f,#2f5bff33)] transition-[width] duration-75"
           style={{ width: `${percent}%` }}
         />
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-[7px] w-[2px] -translate-x-1/2 rounded-full bg-wave-cyan shadow-[0_0_10px_#39e1ff] transition-[left] duration-75"
+          className="pointer-events-none absolute inset-y-[7px] w-[2px] -translate-x-1/2 rounded-full bg-wave-cyan shadow-[0_0_10px_#2f5bff] transition-[left] duration-75"
           style={{ left: `${percent}%` }}
         />
         <span
@@ -268,7 +268,7 @@ export function ChoiceGrid<T extends string>({
             onClick={() => onChange(option.value)}
             className={`focus-ring flex flex-col items-start gap-2 rounded-[12px] p-2 text-left transition-[background,box-shadow] duration-200 [--ring-offset:1px] ${
               active
-                ? "bg-raised shadow-[0_0_0_1px_#5b7cff99,0_6px_20px_-10px_#5b7cffaa]"
+                ? "bg-raised shadow-[0_0_0_1px_#2f5bff99,0_6px_20px_-10px_#2f5bffaa]"
                 : "bg-well shadow-[inset_0_0_0_1px_var(--color-hairline)] hover:bg-well-strong"
             }`}
           >

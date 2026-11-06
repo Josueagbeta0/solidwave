@@ -11,47 +11,53 @@
 @custom-variant pointer-coarse (@media (pointer: coarse));
 
 /*
- * SolidWave — "midnight" identity.
- * Deep blue-black surfaces, cool light text, and the signature wave gradient
- * (cyan → indigo → violet → magenta) used sparingly for accents.
+ * SolidWave — "studio paper" identity.
+ * Warm off-white paper, near-black ink, stone greys, and a single electric
+ * blue accent used sparingly. Swiss-minimal: hierarchy comes from type and
+ * space, not decoration. Token names are shared with the studio UI.
  */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
-  --font-display: var(--font-sora), var(--font-geist-sans), ui-sans-serif,
-    system-ui, sans-serif;
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Text */
-  --color-ink: #eef1f8;
-  --color-ink-2: #b7bdcc;
-  --color-ink-3: #8a91a4;
-  --color-ink-4: #5f6679;
+  /* Ink (text) */
+  --color-ink: #0c0a09;
+  --color-ink-2: #3d3a36;
+  --color-ink-3: #66615b;
+  --color-ink-4: #8c867f;
 
-  /* Surfaces */
-  --color-shell: #06070c;
-  --color-night: #0a0c14;
-  --color-surface: #10131d;
-  --color-raised: #161a27;
-  --color-stage: #0b0e17;
+  /* Paper (surfaces) */
+  --color-shell: #fafaf9;
+  --color-night: #f4f3f1;
+  --color-surface: #ffffff;
+  --color-raised: #ffffff;
+  --color-stage: #eeedea;
 
   /* Actions */
-  --color-primary: #eef1f8;
-  --color-primary-foreground: #06070c;
+  --color-primary: #0c0a09;
+  --color-primary-foreground: #fafaf9;
 
-  /* Lines & wells (translucent white on dark) */
-  --color-hairline: #ffffff12;
-  --color-hairline-strong: #ffffff22;
-  --color-well: #ffffff08;
-  --color-well-strong: #ffffff12;
+  /* Lines & wells (translucent ink on paper) */
+  --color-hairline: #0c0a0914;
+  --color-hairline-strong: #0c0a0926;
+  --color-well: #0c0a0907;
+  --color-well-strong: #0c0a090f;
 
-  /* Wave accents */
-  --color-wave-cyan: #39e1ff;
-  --color-wave-indigo: #5b7cff;
-  --color-wave-violet: #9b5cff;
-  --color-wave-magenta: #ff5cc8;
-  --color-lamp: #5b9dff;
-  --color-lamp-soft: #5b9dff1f;
+  /* The one accent */
+  --color-accent: #2f5bff;
+  --color-accent-strong: #1f45e0;
+  --color-accent-soft: #2f5bff14;
+
+  /* Legacy accent names, mapped onto the single accent family. */
+  --color-wave-cyan: #2f5bff;
+  --color-wave-indigo: #2f5bff;
+  --color-wave-violet: #4b4dff;
+  --color-wave-magenta: #6a4dff;
+  --color-lamp: #2f5bff;
+  --color-lamp-soft: #2f5bff1f;
 
   --radius-window: 24px;
   --radius-pane: 18px;
@@ -60,35 +66,24 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
-  --shadow-pane: inset 0 1px 0 #ffffff0d, 0 0 0 1px #ffffff0f,
-    0 24px 60px -30px #000000cc;
-  --shadow-raise: inset 0 1px 0 #ffffff14, 0 0 0 1px #ffffff12,
-    0 6px 16px -8px #000000b3;
-  --shadow-float: inset 0 1px 0 #ffffff12, 0 0 0 1px #ffffff14,
-    0 24px 48px -20px #000000e6;
-  --shadow-glow: 0 0 0 1px #5b7cff59, 0 10px 40px -10px #5b7cff99;
-  --shadow-sm: 0 1px 2px #00000066;
+  --shadow-pane: 0 0 0 1px #0c0a090f, 0 1px 2px #0c0a090a, 0 8px 24px -16px #0c0a0926;
+  --shadow-raise: 0 0 0 1px #0c0a0914, 0 1px 2px #0c0a0914, 0 2px 6px -2px #0c0a0914;
+  --shadow-float: 0 0 0 1px #0c0a090f, 0 24px 48px -20px #0c0a0940, 0 8px 16px -8px #0c0a091f;
+  --shadow-glow: 0 0 0 1px #2f5bff, 0 8px 24px -8px #2f5bff8c;
+  --shadow-sm: 0 1px 2px #0c0a0914;
 
   --animate-rise: rise 0.9s var(--ease-out) both;
-  --animate-drift: drift 18s ease-in-out infinite;
   --animate-shimmer: shimmer 1.2s linear infinite;
 }
 
 @layer base {
   :root {
-    color-scheme: dark;
-    --wave: linear-gradient(
-      100deg,
-      var(--color-wave-cyan) 0%,
-      var(--color-wave-indigo) 38%,
-      var(--color-wave-violet) 68%,
-      var(--color-wave-magenta) 100%
-    );
+    color-scheme: light;
     --frame-gutter: 112px;
     --frame-safe: calc(
       env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 16px
     );
-    --section: clamp(112px, 12vw, 180px);
+    --section: clamp(112px, 13vw, 200px);
   }
 
   * {
@@ -96,10 +91,21 @@
   }
 
   html {
-    scroll-behavior: smooth;
     background: var(--color-shell);
     color: var(--color-ink);
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Lenis drives smooth scrolling; keep native behaviour predictable underneath. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: clip;
   }
 
   body {
@@ -107,12 +113,13 @@
     background: var(--color-shell);
     color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-wave-indigo) 45%, transparent);
-    color: #fff;
+    background: #2f5bff2e;
+    color: var(--color-ink);
   }
 
   @media (max-width: 900px) {
@@ -124,14 +131,11 @@
   @media (max-width: 640px) {
     :root {
       --frame-gutter: 32px;
-      --section: 88px;
+      --section: 96px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
     *,
     *::before,
     *::after {
@@ -150,51 +154,56 @@
 
   .heading-hero {
     font-family: var(--font-display);
-    letter-spacing: -0.045em;
-    font-size: clamp(44px, 7vw, 104px);
-    line-height: 0.94;
+    letter-spacing: -0.055em;
+    font-size: clamp(48px, 8vw, 116px);
+    line-height: 0.92;
     font-weight: 600;
     text-wrap: balance;
   }
 
   .heading-section {
     font-family: var(--font-display);
-    letter-spacing: -0.04em;
+    letter-spacing: -0.045em;
     text-wrap: balance;
-    font-size: clamp(32px, 4vw, 56px);
-    line-height: 1;
+    font-size: clamp(34px, 4.6vw, 64px);
+    line-height: 0.98;
     font-weight: 600;
   }
 
+  /* Editorial accent word inside a heading. */
+  .serif-accent {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
   .text-lead {
-    letter-spacing: -0.01em;
-    color: var(--color-ink-2);
+    letter-spacing: -0.012em;
+    color: var(--color-ink-3);
     text-wrap: pretty;
-    font-size: 18px;
-    line-height: 1.6;
+    font-size: 19px;
+    line-height: 1.55;
   }
 
   .eyebrow {
     font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.14em;
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-ink-3);
   }
 
-  /* Text filled with the signature gradient. */
+  /* Accent text and fills (formerly the rainbow wave — now one calm blue). */
   .text-wave {
-    background: var(--wave);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-accent);
   }
 
   .bg-wave {
-    background: var(--wave);
+    background: var(--color-accent);
   }
 
-  /* 1px gradient border on any rounded element. */
+  /* 1px accent border on any rounded element. */
   .ring-wave {
     position: relative;
   }
@@ -202,31 +211,22 @@
     content: "";
     position: absolute;
     inset: 0;
-    padding: 1px;
     border-radius: inherit;
-    background: var(--wave);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+    box-shadow: inset 0 0 0 1px #2f5bff59;
     pointer-events: none;
   }
 
   .panel {
-    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    background: var(--color-surface);
     box-shadow: var(--shadow-pane);
   }
 
   .glass {
     isolation: isolate;
-    background: color-mix(in srgb, var(--color-raised) 62%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 72%, transparent);
     -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(160%);
     backdrop-filter: blur(var(--glass-blur, 18px)) saturate(160%);
-    box-shadow:
-      inset 0 1px 0 #ffffff14,
-      0 0 0 1px #ffffff12,
-      0 18px 40px -20px #000000cc;
+    box-shadow: 0 0 0 1px #0c0a090f, 0 12px 32px -18px #0c0a0933;
   }
 
   .press {
@@ -246,21 +246,45 @@
   }
 
   .focus-ring:focus-visible {
-    outline: 2px solid var(--color-wave-cyan);
+    outline: 2px solid var(--color-accent);
     outline-offset: var(--ring-offset, 3px);
   }
 
   .grain {
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22160%22%3E%3Cfilter%20id%3D%22a%22%3E%3CfeTurbulence%20baseFrequency%3D%22.9%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22%20type%3D%22fractalNoise%22%2F%3E%3CfeColorMatrix%20values%3D%220%200%200%200%201%200%200%200%200%201%200%200%200%200%201%200%200%200%201%200%22%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url(%23a)%22%2F%3E%3C%2Fsvg%3E");
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22160%22%3E%3Cfilter%20id%3D%22a%22%3E%3CfeTurbulence%20baseFrequency%3D%22.9%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22%20type%3D%22fractalNoise%22%2F%3E%3CfeColorMatrix%20values%3D%220%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%201%200%22%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url(%23a)%22%2F%3E%3C%2Fsvg%3E");
     background-size: 160px 160px;
   }
 
-  /* Faint engineering grid used behind sections. */
+  /* Faint drafting grid. */
   .grid-lines {
     background-image:
-      linear-gradient(to right, #ffffff08 1px, transparent 1px),
-      linear-gradient(to bottom, #ffffff08 1px, transparent 1px);
+      linear-gradient(to right, #0c0a090a 1px, transparent 1px),
+      linear-gradient(to bottom, #0c0a090a 1px, transparent 1px);
     background-size: 64px 64px;
+  }
+
+  /* Scroll reveal: elements start slightly low and transparent, then settle. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(4px);
+    transition:
+      opacity 0.9s var(--ease-out),
+      transform 0.9s var(--ease-out),
+      filter 0.9s var(--ease-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
   }
 
   .no-scrollbar {
@@ -273,30 +297,20 @@
 
   .thin-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #ffffff1f transparent;
+    scrollbar-color: #0c0a0926 transparent;
   }
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(22px);
+    transform: translateY(20px);
     filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
     filter: blur(0);
-  }
-}
-
-@keyframes drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(3%, -4%, 0) scale(1.08);
   }
 }
 
@@ -309,6 +323,7 @@
   }
 }
 
+/* Indeterminate progress bar. */
 @keyframes wave-flow {
   0% {
     background-position: 0% 50%;
@@ -318,20 +333,17 @@
   }
 }
 
-/* Seamless looping version of the wave (colours mirrored so the loop is invisible). */
 .wave-flow {
   background-image: linear-gradient(
-    100deg,
-    var(--color-wave-cyan),
-    var(--color-wave-indigo),
-    var(--color-wave-violet),
-    var(--color-wave-magenta),
-    var(--color-wave-violet),
-    var(--color-wave-indigo),
-    var(--color-wave-cyan)
+    90deg,
+    var(--color-accent),
+    #8aa3ff,
+    var(--color-accent),
+    #8aa3ff,
+    var(--color-accent)
   );
   background-size: 200% 100%;
-  animation: wave-flow 8s linear infinite;
+  animation: wave-flow 1.6s linear infinite;
 }
 
 .delay-1 {
@@ -345,6 +357,12 @@
 }
 .delay-4 {
   animation-delay: 320ms;
+}
+
+@keyframes spin-y {
+  to {
+    transform: rotateY(360deg);
+  }
 }
 
 @keyframes marquee {

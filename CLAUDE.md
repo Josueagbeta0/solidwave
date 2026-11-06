@@ -52,10 +52,13 @@ Routes `app/page.tsx` and `app/studio/page.tsx` are server components; anything 
 
 ## Styling
 
-Tailwind v4, CSS-first config in `app/globals.css` (no `tailwind.config`). Dark "midnight" theme:
-- Tokens in `@theme`: text `ink`…`ink-4`, surfaces `shell` / `night` / `surface` / `raised`, translucent `hairline` / `well`, accents `wave-cyan|indigo|violet|magenta`. Utility classes `.text-wave`, `.bg-wave`, `.wave-flow` (animated), `.ring-wave` (gradient border), `.panel`, `.glass`, `.eyebrow`, `.heading-hero`, `.heading-section`.
+Tailwind v4, CSS-first config in `app/globals.css` (no `tailwind.config`). Light "studio paper" theme, Swiss-minimal (direction chosen with the `ui-ux-pro-max` skill: light mode, one accent, no rainbow gradients):
+- Tokens in `@theme`: ink `ink`…`ink-4` (near-black → stone), paper surfaces `shell` (#fafaf9) / `night` / `surface` (white) / `raised` / `stage`, translucent-ink `hairline` / `well`, and **one accent** `accent` (#2f5bff) with `accent-soft`. The old `wave-*` names still exist but all map onto the accent family — prefer `accent` in new code. Classes: `.panel`, `.glass`, `.eyebrow`, `.heading-hero`, `.heading-section`, `.serif-accent` (Instrument Serif italic word inside a heading), `.text-lead`, `.reveal` (scroll reveal), `.wave-flow` (progress bar).
+- The studio shares these tokens: light UI chrome around a (by default dark) 3D viewport. Viewport overlays must not use `text-ink` on a dark stage — branch on `darkStage` (see the empty state).
+- Motion: `components/motion.tsx` — `SmoothScroll` (Lenis, landing page only; skipped under reduced motion) and `Reveal` (IntersectionObserver fade/lift, `delay` to stagger). Lenis swallows programmatic `scrollTo`, so headless full-page screenshots should use a viewport as tall as the page instead of scrolling.
+- Hero stage colours live in `lib/stage.ts` (shared by the CSS background and `paintHeroStage` for glass refraction) — not in the `"use client"` HeroScene, since server components can't import plain values from client modules.
 - Breakpoints are **max-width custom variants**: `max-desk` (1180), `max-tab` (900), `max-mid` (799), `max-fold` (640), `max-phone` (480), `max-2xs` (390), `max-3xs` (350).
-- Fonts: Geist Sans/Mono (`geist` package) for UI, Sora (`next/font/google`, `--font-sora` → `font-display`) for headings.
+- Fonts: Geist Sans/Mono (`geist` package) for UI and headings, Instrument Serif (`next/font/google`, `--font-instrument-serif` → `font-serif`) for accent words.
 
 ## Verifying visually
 

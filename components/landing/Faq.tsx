@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/motion";
+
 const faqs = [
   {
     q: "Do I need to know 3D software?",
@@ -37,16 +39,16 @@ export function Faq() {
   return (
     <section id="faq" className="frame scroll-mt-24 pt-[var(--section)]" aria-labelledby="faq-title">
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-12 max-tab:grid-cols-1">
-        <div>
+        <Reveal>
           <p className="eyebrow">FAQ</p>
-          <h2 id="faq-title" className="heading-section mt-4">
-            Good questions.
+          <h2 id="faq-title" className="heading-section mt-5">
+            Good questions, <span className="serif-accent">straight</span> answers.
           </h2>
-        </div>
-        <div className="divide-y divide-hairline border-y border-hairline">
+        </Reveal>
+        <Reveal delay={100} className="divide-y divide-hairline border-y border-hairline">
           {faqs.map((item) => (
             <details key={item.q} className="group py-1">
-              <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-6 rounded-lg py-4 text-[17px] font-medium text-ink [--ring-offset:2px] [&::-webkit-details-marker]:hidden">
+              <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-6 rounded-lg py-5 text-[17px] font-medium tracking-[-0.015em] text-ink transition-colors duration-200 hover:text-accent [--ring-offset:2px] [&::-webkit-details-marker]:hidden">
                 {item.q}
                 <span
                   aria-hidden="true"
@@ -59,7 +61,7 @@ export function Faq() {
               <p className="max-w-[62ch] pb-5 text-[15px] leading-[1.65] text-ink-3">{item.a}</p>
             </details>
           ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

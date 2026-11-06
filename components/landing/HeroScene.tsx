@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
@@ -19,6 +19,7 @@ import { SkyDome, StageBackdrop } from "@/components/studio/IconCanvas";
 import { createFloorFade, FLOOR_SIZE } from "@/lib/studio/floor";
 import { createMaterial, finishById } from "@/lib/studio/materials";
 import { svgToShapes } from "@/lib/trace";
+import { paintHeroStage } from "@/lib/stage";
 
 function useIcon(sampleId: SampleId) {
   const icon = useMemo(() => {
@@ -61,12 +62,13 @@ function Hero3D({ sampleId, finishId }: { sampleId: SampleId; finishId: string }
   useFrame((state, delta) => {
     if (!group.current) return;
     const t = state.clock.elapsedTime;
-    // A little flourish whenever the shape or finish changes.
+    // A little flourish whenever the shape or finish changes, then a slow sway that follows the pointer.
     spin.current = THREE.MathUtils.damp(spin.current, 0, 2.4, delta);
-    group.current.rotation.y =
-      Math.sin(t * 0.5) * 0.5 + state.pointer.x * 0.35 + spin.current * Math.PI * 2 * 0.25;
-    group.current.rotation.x = -0.08 - state.pointer.y * 0.12;
-    group.current.position.y = 0.5 + Math.sin(t * 0.9) * 0.12;
+    const targetY = Math.sin(t * 0.45) * 0.45 + state.pointer.x * 0.4 + spin.current * Math.PI * 0.5;
+    const targetX = -0.06 - state.pointer.y * 0.14;
+    group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, targetY, 5, delta);
+    group.current.rotation.x = THREE.MathUtils.damp(group.current.rotation.x, targetX, 5, delta);
+    group.current.position.y = 0.45 + Math.sin(t * 0.9) * 0.1;
   });
 
   if (!icon) return null;
@@ -77,30 +79,28 @@ function Hero3D({ sampleId, finishId }: { sampleId: SampleId; finishId: string }
   );
 }
 
-/** Mirrors the hero card's CSS gradient so the glass refracts what sits behind it. */
-const paintHeroCard = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-  const gradient = ctx.createRadialGradient(width / 2, height * 0.2, 0, width / 2, height * 0.2, Math.max(width, height) * 0.8);
-  gradient.addColorStop(0, "#1e1f5c");
-  gradient.addColorStop(0.55, "#0a0b1e");
-  gradient.addColorStop(1, "#05060d");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-  const glow = ctx.createRadialGradient(width / 2, height * 0.48, 0, width / 2, height * 0.48, Math.min(width, height) * 0.4);
-  glow.addColorStop(0, "#5b7cff55");
-  glow.addColorStop(1, "#5b7cff00");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, width, height);
-};
+/** Pulls the camera back on tall (portrait) stages so the object never overflows the width. */
+function CameraFit() {
+  const camera = useThree((state) => state.camera) as THREE.PerspectiveCamera;
+  const aspect = useThree((state) => state.size.width / Math.max(1, state.size.height));
+  useEffect(() => {
+    const distance = aspect >= 1.25 ? 16 : 16 * Math.min(2.2, 1.25 / aspect);
+    camera.position.set(0, 1.4, distance);
+    camera.lookAt(0, 0.3, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, aspect]);
+  return null;
+}
 
 function Stage() {
-  const rig = rigById("wave");
-  const fade = useMemo(() => createFloorFade(6, 22), []);
+  const rig = rigById("studio");
+  const fade = useMemo(() => createFloorFade(5, 20), []);
   useEffect(() => () => fade?.dispose(), [fade]);
   return (
     <>
       <ambientLight intensity={rig.ambient} />
-      <directionalLight position={rig.key.position} intensity={rig.key.intensity * 1.4} color={rig.key.color} />
-      <directionalLight position={rig.fill.position} intensity={rig.fill.intensity * 1.4} color={rig.fill.color} />
+      <directionalLight position={rig.key.position} intensity={rig.key.intensity * 1.5} color={rig.key.color} />
+      <directionalLight position={rig.fill.position} intensity={rig.fill.intensity * 1.5} color={rig.fill.color} />
       <Environment resolution={512} frames={1}>
         <color attach="background" args={[rig.ambientColor]} />
         <SkyDome sky={rig.sky} />
@@ -108,7 +108,7 @@ function Stage() {
           <Lightformer
             key={index}
             form={panel.form}
-            intensity={panel.intensity * 1.4}
+            intensity={panel.intensity * 1.5}
             position={panel.position}
             rotation={panel.rotation ?? [0, 0, 0]}
             scale={panel.scale}
@@ -116,43 +116,43 @@ function Stage() {
           />
         ))}
       </Environment>
-      <StageBackdrop paint={paintHeroCard} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.1, 0]}>
+      <StageBackdrop paint={paintHeroStage} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.9, 0]}>
         <planeGeometry args={[FLOOR_SIZE, FLOOR_SIZE]} />
         <MeshReflectorMaterial
-          color="#07081a"
-          blur={[400, 120]}
+          color="#e9e7e3"
+          blur={[500, 160]}
           resolution={1024}
           mixBlur={1}
-          mixStrength={22}
-          roughness={0.9}
-          metalness={0.5}
-          depthScale={1.1}
+          mixStrength={4}
+          roughness={1}
+          metalness={0}
+          depthScale={1.2}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          mirror={0.7}
+          mirror={0.5}
           transparent
           alphaMap={fade ?? undefined}
         />
       </mesh>
-      <ContactShadows position={[0, -3.08, 0]} opacity={0.7} scale={20} blur={2.4} far={10} frames={Infinity} />
+      <ContactShadows position={[0, -2.88, 0]} opacity={0.42} scale={16} blur={2.8} far={8} frames={Infinity} />
     </>
   );
 }
 
 const shapeOptions: SampleId[] = ["solidwave", "spark", "heart", "bolt", "ring", "gem"];
 const finishOptions = [
-  { id: "holo", label: "Holo" },
-  { id: "clear", label: "Glass" },
-  { id: "prism", label: "Prism" },
   { id: "chrome", label: "Chrome" },
+  { id: "clear", label: "Glass" },
+  { id: "holo", label: "Holo" },
   { id: "gold", label: "Gold" },
+  { id: "sapphire", label: "Sapphire" },
   { id: "black-metal", label: "Black" },
 ];
 
 export function HeroScene() {
   const [sampleId, setSampleId] = useState<SampleId>("solidwave");
-  const [finishId, setFinishId] = useState("holo");
+  const [finishId, setFinishId] = useState("chrome");
   const [visible, setVisible] = useState(true);
   const wrapper = useRef<HTMLDivElement>(null);
 
@@ -173,19 +173,21 @@ export function HeroScene() {
         dpr={[1, 1.75]}
         frameloop={visible ? "always" : "never"}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
-        camera={{ position: [0, 1.6, 17], fov: 30, near: 0.1, far: 200 }}
+        camera={{ position: [0, 1.4, 16], fov: 28, near: 0.1, far: 200 }}
         className="!absolute inset-0"
       >
+        <CameraFit />
         <Stage />
         <Hero3D sampleId={sampleId} finishId={finishId} />
         <EffectComposer multisampling={4} frameBufferType={THREE.HalfFloatType}>
-          <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.8} luminanceSmoothing={0.25} radius={0.7} />
+          <Bloom mipmapBlur intensity={0.25} luminanceThreshold={0.95} luminanceSmoothing={0.2} radius={0.6} />
           <ToneMapping mode={ToneMappingMode.NEUTRAL} />
         </EffectComposer>
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-4">
-        <div role="group" aria-label="Shape" className="pointer-events-auto flex items-center gap-1">
+      {/* Controls: shape on the left, finish on the right (stacked on small screens). */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 max-tab:flex-col max-tab:items-center">
+        <div role="group" aria-label="Shape" className="glass pointer-events-auto flex items-center gap-0.5 rounded-[16px] p-1">
           {shapeOptions.map((id) => {
             const sample = sampleById(id);
             const active = id === sampleId;
@@ -197,8 +199,8 @@ export function HeroScene() {
                 aria-label={sample.name}
                 title={sample.name}
                 onClick={() => setSampleId(id)}
-                className={`focus-ring grid size-9 place-items-center rounded-xl transition-colors [--ring-offset:2px] ${
-                  active ? "bg-white/12 text-ink" : "text-ink-3 hover:bg-white/6 hover:text-ink"
+                className={`focus-ring grid size-10 place-items-center rounded-[12px] transition-[background-color,color,box-shadow] duration-200 [--ring-offset:2px] ${
+                  active ? "bg-surface text-ink shadow-raise" : "text-ink-3 hover:bg-well-strong hover:text-ink"
                 }`}
               >
                 <SampleIcon sample={sample} size={17} />
@@ -209,7 +211,7 @@ export function HeroScene() {
         <div
           role="group"
           aria-label="Finish"
-          className="glass pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-1 no-scrollbar"
+          className="glass no-scrollbar pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[16px] p-1"
         >
           {finishOptions.map((option) => {
             const item = finishById(option.id);
@@ -221,13 +223,13 @@ export function HeroScene() {
                 aria-pressed={active}
                 aria-label={option.label}
                 onClick={() => setFinishId(option.id)}
-                className={`focus-ring flex h-9 shrink-0 items-center gap-2 rounded-full pl-1 transition-[background,padding] duration-300 [--ring-offset:2px] ${
-                  active ? "bg-white/10 pr-3" : "pr-1 hover:bg-white/5"
+                className={`focus-ring flex h-10 shrink-0 items-center gap-2 rounded-[12px] pl-1.5 transition-[background-color,padding,box-shadow] duration-300 ease-out [--ring-offset:2px] ${
+                  active ? "bg-surface pr-3 shadow-raise" : "pr-1.5 hover:bg-well-strong"
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className="block size-7 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,.14)]"
+                  className="block size-7 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,.08),0_2px_6px_-2px_rgba(0,0,0,.3)]"
                   style={{ background: item.swatch }}
                 />
                 {active && <span className="text-[13px] font-medium text-ink">{option.label}</span>}

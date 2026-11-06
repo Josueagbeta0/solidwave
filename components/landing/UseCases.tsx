@@ -1,34 +1,30 @@
+import { Reveal } from "@/components/motion";
+
 const uses = [
   "App icons",
   "Landing page heroes",
+  "Brand guidelines",
   "Pitch decks",
   "Social posts",
   "Product mockups",
   "Event badges",
-  "3D printing",
-  "AR & WebGL scenes",
-  "Merch prototypes",
-  "Brand guidelines",
+  "3D prints",
 ];
 
 export function UseCases() {
-  const row = [...uses, ...uses];
   return (
-    <section aria-label="Made for" className="relative mt-20 border-y border-hairline py-5">
-      <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-        <ul className="flex w-max animate-[marquee_38s_linear_infinite] gap-10 motion-reduce:animate-none">
-          {row.map((use, index) => (
-            <li
-              key={`${use}-${index}`}
-              aria-hidden={index >= uses.length}
-              className="flex items-center gap-10 whitespace-nowrap font-display text-[18px] font-medium tracking-[-0.02em] text-ink-3"
-            >
-              {use}
-              <span className="bg-wave size-1.5 rounded-full" />
-            </li>
-          ))}
-        </ul>
-      </div>
+    <section aria-label="Use cases" className="frame pt-20 max-tab:pt-14">
+      <Reveal className="flex flex-wrap items-center justify-center gap-x-2 gap-y-3 text-center">
+        <span className="eyebrow mr-3 max-fold:w-full max-fold:mr-0">Made for</span>
+        {uses.map((use, index) => (
+          <span key={use} className="flex items-center gap-2 text-[15px] text-ink-3">
+            {use}
+            {index < uses.length - 1 && (
+              <span aria-hidden="true" className="size-1 rounded-full bg-hairline-strong" />
+            )}
+          </span>
+        ))}
+      </Reveal>
     </section>
   );
 }

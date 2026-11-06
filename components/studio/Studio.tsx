@@ -225,7 +225,7 @@ function NumberField({
   max?: number;
 }) {
   return (
-    <label className="flex h-10 min-w-0 flex-1 items-center gap-1 rounded-[10px] bg-well px-2.5 shadow-[inset_0_0_0_1px_var(--color-hairline)] focus-within:shadow-[inset_0_0_0_1px_#5b7cff]">
+    <label className="flex h-10 min-w-0 flex-1 items-center gap-1 rounded-[10px] bg-well px-2.5 shadow-[inset_0_0_0_1px_var(--color-hairline)] focus-within:shadow-[inset_0_0_0_1px_#2f5bff]">
       <span className="font-mono text-[11px] text-ink-4">{label}</span>
       <input
         type="number"
@@ -310,7 +310,7 @@ export function Studio() {
   const background =
     backgroundPresets.find((preset) => preset.id === backgroundId) ?? backgroundPresets[0];
   const darkStage = background.dark ?? false;
-  const haloColor = material.tint.length === 7 ? material.tint : "#5b7cff";
+  const haloColor = material.tint.length === 7 ? material.tint : "#2f5bff";
 
   const sceneSettings: SceneSettings = {
     view,
@@ -686,7 +686,7 @@ export function Studio() {
               onClick={() => applyLook(look)}
               className={`focus-ring group flex flex-col rounded-[14px] p-1.5 text-left transition-[background-color,box-shadow] duration-200 [--ring-offset:1px] ${
                 active
-                  ? "bg-raised shadow-[0_0_0_1px_#5b7cffaa,0_10px_28px_-14px_#5b7cffcc]"
+                  ? "bg-raised shadow-[0_0_0_1px_#2f5bffaa,0_10px_28px_-14px_#2f5bffcc]"
                   : "bg-well shadow-[inset_0_0_0_1px_var(--color-hairline)] hover:bg-well-strong"
               }`}
             >
@@ -906,7 +906,7 @@ export function Studio() {
                 aria-pressed={active}
                 className={`focus-ring flex min-h-[78px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1 py-2.5 transition-[background,box-shadow] duration-200 [--ring-offset:1px] ${
                   active
-                    ? "bg-raised shadow-[0_0_0_1px_#5b7cff99,0_6px_20px_-10px_#5b7cffaa]"
+                    ? "bg-raised shadow-[0_0_0_1px_#2f5bff99,0_6px_20px_-10px_#2f5bffaa]"
                     : "hover:bg-well-strong"
                 }`}
               >
@@ -1325,7 +1325,7 @@ export function Studio() {
         <span className="mx-1 h-5 w-px bg-hairline max-fold:hidden" />
         <div className="flex min-w-0 items-center gap-2 max-fold:hidden">
           <span
-            className={`size-1.5 shrink-0 rounded-full ${trace ? "bg-wave-cyan shadow-[0_0_8px_#39e1ff]" : "bg-ink-4"}`}
+            className={`size-1.5 shrink-0 rounded-full ${trace ? "bg-wave-cyan shadow-[0_0_8px_#2f5bff]" : "bg-ink-4"}`}
           />
           <span className="truncate text-[13px] text-ink-2">{trace ? fileName : "No file"}</span>
         </div>
@@ -1724,37 +1724,41 @@ export function Studio() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className={`focus-ring group ring-wave flex w-full max-w-[520px] flex-col items-center rounded-[28px] border border-dashed px-8 py-10 transition-colors [--ring-offset:4px] max-phone:px-5 max-phone:py-8 ${
+                className={`focus-ring group flex w-full max-w-[520px] flex-col items-center rounded-[28px] border border-dashed px-8 py-11 transition-colors duration-300 [--ring-offset:4px] max-phone:px-5 max-phone:py-8 ${
                   darkStage
-                    ? "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
-                    : "border-black/10 bg-white/40 hover:bg-white/60"
+                    ? "border-white/15 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.06]"
+                    : "border-black/15 bg-white/50 hover:border-black/25 hover:bg-white/70"
                 }`}
               >
-                <span className="mb-5 grid size-16 place-items-center rounded-[20px] bg-night shadow-glow transition-transform duration-500 ease-spring group-hover:-translate-y-1 group-hover:rotate-3">
-                  <LogoMark size={36} gradient />
+                <span className="mb-6 grid size-16 place-items-center rounded-[20px] bg-white shadow-float transition-transform duration-500 ease-spring group-hover:-translate-y-1 group-hover:rotate-3">
+                  <LogoMark size={34} gradient />
                 </span>
                 <span
-                  className={`font-display text-[clamp(24px,3vw,34px)] font-semibold leading-[1.05] tracking-[-0.04em] ${
-                    darkStage ? "text-ink" : "text-[#0a0c14]"
+                  className={`text-[clamp(26px,3vw,36px)] font-semibold leading-[1.05] tracking-[-0.045em] ${
+                    darkStage ? "text-white" : "text-ink"
                   }`}
                 >
-                  Drop a logo to make it solid
+                  Drop a logo to make it <span className="serif-accent">solid</span>
                 </span>
                 <span
-                  className={`mt-3 max-w-[40ch] text-[14px] leading-[1.6] ${
-                    darkStage ? "text-ink-3" : "text-[#4a5163]"
+                  className={`mt-3 max-w-[40ch] text-[14px] leading-[1.6] [text-wrap:pretty] ${
+                    darkStage ? "text-white/55" : "text-ink-3"
                   }`}
                 >
                   SVG, PNG, JPG or WebP. Paste from the clipboard works too. Nothing is uploaded:
                   it all happens on your machine.
                 </span>
-                <span className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground">
+                <span
+                  className={`mt-7 inline-flex h-11 items-center gap-2 rounded-[14px] px-5 text-[14px] font-medium ${
+                    darkStage ? "bg-white text-ink" : "bg-primary text-primary-foreground"
+                  }`}
+                >
                   <Upload size={16} strokeWidth={2} />
                   Choose a file
                 </span>
               </button>
 
-              <p className="eyebrow mt-8">Or start from a shape</p>
+              <p className={`eyebrow mt-9 ${darkStage ? "!text-white/45" : ""}`}>Or start from a shape</p>
               <div className="mt-3 flex max-w-[520px] flex-wrap items-center justify-center gap-1.5">
                 {samples.map((sample) => (
                   <button
@@ -1763,7 +1767,11 @@ export function Studio() {
                     aria-label={`Open the ${sample.name} shape`}
                     title={sample.name}
                     onClick={() => loadSample(sample.id)}
-                    className="focus-ring grid size-11 place-items-center rounded-2xl bg-white/[0.04] text-ink-2 shadow-[inset_0_0_0_1px_var(--color-hairline)] press hover:bg-white/10 hover:text-ink [--press:.92] [--ring-offset:2px]"
+                    className={`focus-ring grid size-11 place-items-center rounded-[14px] press [--press:.92] [--ring-offset:2px] ${
+                      darkStage
+                        ? "bg-white/[0.06] text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/15 hover:text-white"
+                        : "bg-white/70 text-ink-2 shadow-raise hover:bg-white hover:text-ink"
+                    }`}
                   >
                     <SampleIcon sample={sample} size={19} />
                   </button>
@@ -1772,7 +1780,9 @@ export function Studio() {
               <button
                 type="button"
                 onClick={() => loadSample("solidwave")}
-                className="focus-ring mt-5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium text-ink-3 transition-colors hover:text-ink [--ring-offset:2px]"
+                className={`focus-ring mt-5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors [--ring-offset:2px] ${
+                  darkStage ? "text-white/55 hover:text-white" : "text-ink-3 hover:text-ink"
+                }`}
               >
                 <Wand2 size={13} strokeWidth={1.8} />
                 Surprise me with the SolidWave mark
@@ -1863,8 +1873,8 @@ function ModeGlyph({ mode }: { mode: GeometryMode }) {
     <svg viewBox="0 0 48 28" className={common} aria-hidden="true">
       <defs>
         <linearGradient id={`g-${mode}`} x1="0" x2="1">
-          <stop offset="0" stopColor="#39e1ff" />
-          <stop offset="1" stopColor="#9b5cff" />
+          <stop offset="0" stopColor="#2f5bff" />
+          <stop offset="1" stopColor="#6a8bff" />
         </linearGradient>
       </defs>
       {mode === "extrude" && (

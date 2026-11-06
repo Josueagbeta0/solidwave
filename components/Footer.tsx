@@ -7,14 +7,14 @@ const columns = [
     links: [
       { href: "/studio", label: "Studio" },
       { href: "/#finishes", label: "Finishes" },
-      { href: "/#render", label: "Render engine" },
+      { href: "/#features", label: "Features" },
       { href: "/#formats", label: "Export formats" },
     ],
   },
   {
     title: "Start from",
     links: [
-      { href: "/studio?sample=solidwave&finish=holo", label: "Holographic wave" },
+      { href: "/studio?sample=solidwave&finish=chrome", label: "Chrome wave" },
       { href: "/studio?sample=bolt&finish=gold", label: "Gold bolt" },
       { href: "/studio?sample=heart&finish=rose", label: "Rose glass heart" },
       { href: "/studio?sample=ring&finish=chrome", label: "Chrome ring" },
@@ -58,7 +58,12 @@ export function Footer() {
         <span>© {new Date().getFullYear()} SolidWave. All rights reserved.</span>
         <span className="font-mono">Rendered in your browser · No uploads</span>
       </div>
-      <div aria-hidden="true" className="bg-wave h-[3px] w-full opacity-80" />
+      {/* Oversized wordmark that bleeds off the bottom edge. */}
+      <div aria-hidden="true" className="frame -mb-[0.22em] select-none overflow-hidden">
+        <p className="text-center text-[clamp(64px,17vw,236px)] font-semibold leading-none tracking-[-0.07em] text-ink/[0.05]">
+          SolidWave
+        </p>
+      </div>
     </footer>
   );
 }

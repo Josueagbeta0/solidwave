@@ -12,33 +12,26 @@ export const LOGO_PATHS = [
 type LogoMarkProps = {
   size?: number;
   className?: string;
-  /** Fill with the wave gradient instead of currentColor. */
+  /** Brand colouring: the heavy band in ink-blue accent, the light band softer. */
   gradient?: boolean;
 };
 
 export function LogoMark({ size = 24, className, gradient = false }: LogoMarkProps) {
-  const id = "solidwave-mark-gradient";
   return (
     <svg
       width={size}
       height={size}
       viewBox={LOGO_VIEWBOX}
-      fill={gradient ? `url(#${id})` : "currentColor"}
+      fill="currentColor"
       aria-hidden="true"
       className={className}
     >
-      {gradient && (
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="1" y2="0.35">
-            <stop offset="0" stopColor="#39e1ff" />
-            <stop offset="0.4" stopColor="#5b7cff" />
-            <stop offset="0.72" stopColor="#9b5cff" />
-            <stop offset="1" stopColor="#ff5cc8" />
-          </linearGradient>
-        </defs>
-      )}
-      {LOGO_PATHS.map((d) => (
-        <path key={d} d={d} />
+      {LOGO_PATHS.map((d, index) => (
+        <path
+          key={d}
+          d={d}
+          fill={gradient ? (index === 0 ? "#2f5bff" : "#8aa3ff") : undefined}
+        />
       ))}
     </svg>
   );
@@ -46,8 +39,8 @@ export function LogoMark({ size = 24, className, gradient = false }: LogoMarkPro
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-display font-semibold tracking-[-0.04em] ${className}`}>
-      Solid<span className="text-ink-3">Wave</span>
+    <span className={`font-display font-semibold tracking-[-0.045em] ${className}`}>
+      SolidWave
     </span>
   );
 }
