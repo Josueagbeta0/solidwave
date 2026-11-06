@@ -1,0 +1,357 @@
+@import "tailwindcss";
+
+@custom-variant max-desk (@media (max-width: 1180px));
+@custom-variant max-tab (@media (max-width: 900px));
+@custom-variant max-mid (@media (max-width: 799px));
+@custom-variant max-fold (@media (max-width: 640px));
+@custom-variant max-phone (@media (max-width: 480px));
+@custom-variant max-2xs (@media (max-width: 390px));
+@custom-variant max-3xs (@media (max-width: 350px));
+@custom-variant hover-none (@media (hover: none));
+@custom-variant pointer-coarse (@media (pointer: coarse));
+
+/*
+ * SolidWave — "midnight" identity.
+ * Deep blue-black surfaces, cool light text, and the signature wave gradient
+ * (cyan → indigo → violet → magenta) used sparingly for accents.
+ */
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-display: var(--font-sora), var(--font-geist-sans), ui-sans-serif,
+    system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Text */
+  --color-ink: #eef1f8;
+  --color-ink-2: #b7bdcc;
+  --color-ink-3: #8a91a4;
+  --color-ink-4: #5f6679;
+
+  /* Surfaces */
+  --color-shell: #06070c;
+  --color-night: #0a0c14;
+  --color-surface: #10131d;
+  --color-raised: #161a27;
+  --color-stage: #0b0e17;
+
+  /* Actions */
+  --color-primary: #eef1f8;
+  --color-primary-foreground: #06070c;
+
+  /* Lines & wells (translucent white on dark) */
+  --color-hairline: #ffffff12;
+  --color-hairline-strong: #ffffff22;
+  --color-well: #ffffff08;
+  --color-well-strong: #ffffff12;
+
+  /* Wave accents */
+  --color-wave-cyan: #39e1ff;
+  --color-wave-indigo: #5b7cff;
+  --color-wave-violet: #9b5cff;
+  --color-wave-magenta: #ff5cc8;
+  --color-lamp: #5b9dff;
+  --color-lamp-soft: #5b9dff1f;
+
+  --radius-window: 24px;
+  --radius-pane: 18px;
+
+  --ease-spring: cubic-bezier(0.3, 1.12, 0.4, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --shadow-pane: inset 0 1px 0 #ffffff0d, 0 0 0 1px #ffffff0f,
+    0 24px 60px -30px #000000cc;
+  --shadow-raise: inset 0 1px 0 #ffffff14, 0 0 0 1px #ffffff12,
+    0 6px 16px -8px #000000b3;
+  --shadow-float: inset 0 1px 0 #ffffff12, 0 0 0 1px #ffffff14,
+    0 24px 48px -20px #000000e6;
+  --shadow-glow: 0 0 0 1px #5b7cff59, 0 10px 40px -10px #5b7cff99;
+  --shadow-sm: 0 1px 2px #00000066;
+
+  --animate-rise: rise 0.9s var(--ease-out) both;
+  --animate-drift: drift 18s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.2s linear infinite;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --wave: linear-gradient(
+      100deg,
+      var(--color-wave-cyan) 0%,
+      var(--color-wave-indigo) 38%,
+      var(--color-wave-violet) 68%,
+      var(--color-wave-magenta) 100%
+    );
+    --frame-gutter: 112px;
+    --frame-safe: calc(
+      env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px) + 16px
+    );
+    --section: clamp(112px, 12vw, 180px);
+  }
+
+  * {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--color-shell);
+    color: var(--color-ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-shell);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-wave-indigo) 45%, transparent);
+    color: #fff;
+  }
+
+  @media (max-width: 900px) {
+    :root {
+      --frame-gutter: 48px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    :root {
+      --frame-gutter: 32px;
+      --section: 88px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .frame {
+    width: min(1200px, calc(100% - max(var(--frame-gutter), var(--frame-safe))));
+    margin-inline: auto;
+  }
+
+  .heading-hero {
+    font-family: var(--font-display);
+    letter-spacing: -0.045em;
+    font-size: clamp(44px, 7vw, 104px);
+    line-height: 0.94;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  .heading-section {
+    font-family: var(--font-display);
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+    font-size: clamp(32px, 4vw, 56px);
+    line-height: 1;
+    font-weight: 600;
+  }
+
+  .text-lead {
+    letter-spacing: -0.01em;
+    color: var(--color-ink-2);
+    text-wrap: pretty;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* Text filled with the signature gradient. */
+  .text-wave {
+    background: var(--wave);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-wave {
+    background: var(--wave);
+  }
+
+  /* 1px gradient border on any rounded element. */
+  .ring-wave {
+    position: relative;
+  }
+  .ring-wave::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--wave);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .panel {
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    box-shadow: var(--shadow-pane);
+  }
+
+  .glass {
+    isolation: isolate;
+    background: color-mix(in srgb, var(--color-raised) 62%, transparent);
+    -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur, 18px)) saturate(160%);
+    box-shadow:
+      inset 0 1px 0 #ffffff14,
+      0 0 0 1px #ffffff12,
+      0 18px 40px -20px #000000cc;
+  }
+
+  .press {
+    transition-property: color, background-color, box-shadow, opacity, scale;
+    transition-duration: 0.15s, 0.15s, 0.15s, 0.15s, 0.28s;
+    transition-timing-function: ease, ease, ease, ease, var(--ease-spring);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .press:active {
+    scale: var(--press, 0.97);
+  }
+
+  .focus-ring {
+    outline: none;
+  }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-wave-cyan);
+    outline-offset: var(--ring-offset, 3px);
+  }
+
+  .grain {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22160%22%20height%3D%22160%22%3E%3Cfilter%20id%3D%22a%22%3E%3CfeTurbulence%20baseFrequency%3D%22.9%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22%20type%3D%22fractalNoise%22%2F%3E%3CfeColorMatrix%20values%3D%220%200%200%200%201%200%200%200%200%201%200%200%200%200%201%200%200%200%201%200%22%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url(%23a)%22%2F%3E%3C%2Fsvg%3E");
+    background-size: 160px 160px;
+  }
+
+  /* Faint engineering grid used behind sections. */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, #ffffff08 1px, transparent 1px),
+      linear-gradient(to bottom, #ffffff08 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff1f transparent;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -4%, 0) scale(1.08);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes wave-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Seamless looping version of the wave (colours mirrored so the loop is invisible). */
+.wave-flow {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-wave-cyan),
+    var(--color-wave-indigo),
+    var(--color-wave-violet),
+    var(--color-wave-magenta),
+    var(--color-wave-violet),
+    var(--color-wave-indigo),
+    var(--color-wave-cyan)
+  );
+  background-size: 200% 100%;
+  animation: wave-flow 8s linear infinite;
+}
+
+.delay-1 {
+  animation-delay: 80ms;
+}
+.delay-2 {
+  animation-delay: 160ms;
+}
+.delay-3 {
+  animation-delay: 240ms;
+}
+.delay-4 {
+  animation-delay: 320ms;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
