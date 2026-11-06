@@ -1,0 +1,52 @@
+import * as THREE from "three";
+
+export type Backdrop = { center: string; edge: string };
+
+/** Neutral photo-studio sweep (light). */
+export const WHITE_STUDIO: Backdrop = { center: "#ffffff", edge: "#e4e2de" };
+/** Neutral studio at night (dark). */
+export const DARK_STUDIO: Backdrop = { center: "#2c2e34", edge: "#08090b" };
+
+const hex = (color: THREE.Color) => `#${color.getHexString(THREE.SRGBColorSpace)}`;
+
+/**
+ * A backdrop that flatters a finish and keeps it readable, balancing light and
+ * dark stages:
+ * - silver metals (chrome, brushed, titanium) → white studio; their reflections carry the contrast;
+ * - light or luminous objects (clear/frosted glass, white ceramic, gold, pale tinted glass)
+ *   → a dark stage tinted with their hue, where highlights and refraction glow;
+ * - dark or deep objects (black, obsidian, cobalt, copper, bronze)
+ *   → a light stage: a pastel of their hue, or white for neutral blacks.
+ */
+export function autoBackdrop(color: string, metalness = 0): Backdrop {
+  const hsl = { h: 0, s: 0, l: 0 };
+  new THREE.Color(color).getHSL(hsl, THREE.SRGBColorSpace);
+  const neutral = hsl.s < 0.14;
+  const light = hsl.l > 0.58;
+
+  if (neutral) {
+    if (metalness > 0.5 && hsl.l > 0.45) return WHITE_STUDIO;
+    return light ? DARK_STUDIO : WHITE_STUDIO;
+  }
+
+  const saturation = Math.min(hsl.s, 0.75);
+  if (light) {
+    const center = new THREE.Color().setHSL(hsl.h, saturation * 0.55, 0.17, THREE.SRGBColorSpace);
+    const edge = new THREE.Color().setHSL(hsl.h, saturation * 0.5, 0.045, THREE.SRGBColorSpace);
+    return { center: hex(center), edge: hex(edge) };
+  }
+  const center = new THREE.Color().setHSL(hsl.h, saturation * 0.45, 0.965, THREE.SRGBColorSpace);
+  const edge = new THREE.Color().setHSL(hsl.h, saturation * 0.4, 0.82, THREE.SRGBColorSpace);
+  return { center: hex(center), edge: hex(edge) };
+}
+
+/** Perceived brightness (0–1) of a hex colour; below ~0.45 the stage reads as dark. */
+export function luminance(color: string) {
+  const c = new THREE.Color(color);
+  return Math.pow(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b, 1 / 2.2);
+}
+
+/** Linear-RGB interpolation between two hex colours. */
+export function mixHex(from: string, to: string, t: number) {
+  return `#${new THREE.Color(from).lerp(new THREE.Color(to), t).getHexString()}`;
+}

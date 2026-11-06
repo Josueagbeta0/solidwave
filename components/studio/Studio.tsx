@@ -45,6 +45,7 @@ import {
   type FinishGroup,
 } from "@/lib/studio/materials";
 import { lightRigs } from "@/lib/studio/lighting";
+import { autoBackdrop, luminance, mixHex } from "@/lib/studio/backdrop";
 import { looks, type Look } from "@/lib/studio/looks";
 import {
   buildIcon,
@@ -273,6 +274,7 @@ export function Studio() {
   const [bgEdge, setBgEdge] = useState("#e4e2de");
   const [vignette, setVignette] = useState(0.08);
   const [halo, setHalo] = useState(0);
+  const [autoStage, setAutoStage] = useState(true);
 
   const [rig, setRig] = useState("studio");
   const [lightAngle, setLightAngle] = useState(0);
@@ -309,8 +311,38 @@ export function Studio() {
   const finish = material.finish;
   const background =
     backgroundPresets.find((preset) => preset.id === backgroundId) ?? backgroundPresets[0];
-  const darkStage = background.dark ?? false;
   const haloColor = material.tint.length === 7 ? material.tint : "#2f5bff";
+
+  // Automatic backdrop: follows the finish colour. Manual picks switch it off.
+  const target = useMemo(
+    () => (autoStage ? autoBackdrop(material.tint, material.metalness) : { center: bgCenter, edge: bgEdge }),
+    [autoStage, material.tint, material.metalness, bgCenter, bgEdge],
+  );
+  // The displayed stage glides to its target instead of snapping.
+  const [stage, setStage] = useState(target);
+  const stageRef = useRef(stage);
+  useEffect(() => {
+    const from = stageRef.current;
+    if (from.center === target.center && from.edge === target.edge) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = reduced ? 1 : 450;
+    const start = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = { center: mixHex(from.center, target.center, eased), edge: mixHex(from.edge, target.edge, eased) };
+      stageRef.current = next;
+      setStage(next);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+  const stageCenter = stage.center;
+  const stageEdge = stage.edge;
+  // Overlays switch between light and dark styling from the actual stage colour.
+  const darkStage = luminance(stageCenter) < 0.45;
 
   const sceneSettings: SceneSettings = {
     view,
@@ -323,7 +355,7 @@ export function Studio() {
     exposure,
     lens,
     floor,
-    floorColor: bgEdge,
+    floorColor: stageEdge,
     shadow,
     quality,
     toneMap,
@@ -394,6 +426,8 @@ export function Studio() {
       setBackgroundMode(look.backdrop.mode);
       setBgCenter(look.backdrop.center);
       setBgEdge(look.backdrop.edge);
+      // The white studio look keeps the colour-following backdrop; the others are art-directed.
+      setAutoStage(look.id === "studio-blanc");
       setHalo(look.halo);
       setVignette(look.vignette);
       setFloor(look.floor);
@@ -611,7 +645,7 @@ export function Studio() {
           size: pngSize,
           paint: pngBackground
             ? (ctx, size) =>
-                paintStage(ctx, size, size, backgroundMode, bgCenter, bgEdge, vignette, halo, haloColor)
+                paintStage(ctx, size, size, backgroundMode, stageCenter, stageEdge, vignette, halo, haloColor)
             : undefined,
         });
         notify(`PNG généré en ${pngSize} × ${pngSize}`);
@@ -645,7 +679,7 @@ export function Studio() {
         aspect: videoAspect,
         seconds: videoSeconds,
         paint: (ctx, width, height) =>
-          paintStage(ctx, width, height, backgroundMode, bgCenter, bgEdge, vignette, halo, haloColor),
+          paintStage(ctx, width, height, backgroundMode, stageCenter, stageEdge, vignette, halo, haloColor),
         onProgress: (progress) => setRecordProgress(progress),
       });
       notify(`Vidéo enregistrée en ${extension.toUpperCase()}`);
@@ -668,7 +702,7 @@ export function Studio() {
     });
 
   const swatches = finishesFor(finishGroup);
-  const bgStyle = backgroundStyle(background, backgroundMode, bgCenter, bgEdge, vignette);
+  const bgStyle = backgroundStyle(background, backgroundMode, stageCenter, stageEdge, vignette);
   const kbd = "rounded-[5px] bg-well-strong px-1.5 py-0.5 font-mono text-[10.5px] text-ink-3";
 
   /* ---------------------------------------------------------------- */
@@ -1100,6 +1134,16 @@ export function Studio() {
       </PanelSection>
 
       <PanelSection title="Fond">
+        <div className="mb-3 flex items-start justify-between gap-3 rounded-[12px] bg-accent-soft px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-medium text-ink">Fond automatique</p>
+            <p className="mt-0.5 text-[11.5px] leading-[1.4] text-ink-3 [text-wrap:pretty]">
+              S’accorde à la couleur de la finition : teinte pastel pour les couleurs, blanc studio
+              pour le chrome, le verre clair et le noir.
+            </p>
+          </div>
+          <Switch label="Fond automatique" checked={autoStage} onChange={setAutoStage} />
+        </div>
         <div className="grid grid-cols-7 gap-1.5">
           {backgroundPresets.map((preset) => (
             <button
@@ -1107,16 +1151,17 @@ export function Studio() {
               type="button"
               aria-label={preset.name}
               title={preset.name}
-              aria-pressed={backgroundId === preset.id}
+              aria-pressed={!autoStage && backgroundId === preset.id}
               onClick={() => {
                 setBackgroundId(preset.id);
+                setAutoStage(false);
                 setBgCenter(preset.center);
                 setBgEdge(preset.edge);
               }}
-              className={`focus-ring aspect-square rounded-[9px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] transition-[outline] [--ring-offset:2px] ${
-                backgroundId === preset.id
-                  ? "outline-2 outline-offset-2 outline-wave-cyan"
-                  : "hover:outline-1 hover:outline-offset-2 hover:outline-white/25"
+              className={`focus-ring aspect-square rounded-[9px] shadow-[inset_0_0_0_1px_rgba(12,10,9,.1)] transition-[outline] [--ring-offset:2px] ${
+                !autoStage && backgroundId === preset.id
+                  ? "outline-2 outline-offset-2 outline-accent"
+                  : "hover:outline-1 hover:outline-offset-2 hover:outline-ink/25"
               }`}
               style={{
                 background: `radial-gradient(110% 90% at 50% 15%, ${preset.center}, ${preset.edge})`,
@@ -1137,8 +1182,25 @@ export function Studio() {
           />
         </div>
         <div className="mt-3">
-          <ColorField label="Centre" value={bgCenter} onChange={setBgCenter} />
-          <ColorField label="Bords" value={bgEdge} onChange={setBgEdge} />
+          <ColorField
+            label="Centre"
+            value={stageCenter}
+            onChange={(value) => {
+              // Editing a colour takes over from the automatic backdrop, starting from what's on screen.
+              if (autoStage) setBgEdge(stageEdge);
+              setAutoStage(false);
+              setBgCenter(value);
+            }}
+          />
+          <ColorField
+            label="Bords"
+            value={stageEdge}
+            onChange={(value) => {
+              if (autoStage) setBgCenter(stageCenter);
+              setAutoStage(false);
+              setBgEdge(value);
+            }}
+          />
           <Slider
             label="Halo"
             value={halo}
@@ -1522,9 +1584,9 @@ export function Studio() {
             sizeName={fileName}
             fitTick={fitTick}
             onStats={onStats}
-            stageKey={`${backgroundMode}-${bgCenter}-${bgEdge}-${vignette}-${halo}-${haloColor}`}
+            stageKey={`${backgroundMode}-${stageCenter}-${stageEdge}-${vignette}-${halo}-${haloColor}`}
             paintStage={(ctx, width, height) =>
-              paintStage(ctx, width, height, backgroundMode, bgCenter, bgEdge, vignette, halo, haloColor)
+              paintStage(ctx, width, height, backgroundMode, stageCenter, stageEdge, vignette, halo, haloColor)
             }
           />
 
