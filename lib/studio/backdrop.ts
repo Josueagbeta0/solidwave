@@ -4,6 +4,8 @@ export type Backdrop = { center: string; edge: string };
 
 /** Neutral photo-studio sweep (light). */
 export const WHITE_STUDIO: Backdrop = { center: "#ffffff", edge: "#e4e2de" };
+/** Cool grey studio sweep: clear glass reads as glass here, not as a hole. */
+export const GLASS_STUDIO: Backdrop = { center: "#e8eaef", edge: "#a7aebb" };
 /** Neutral studio at night (dark). */
 export const DARK_STUDIO: Backdrop = { center: "#2c2e34", edge: "#08090b" };
 
@@ -13,12 +15,14 @@ const hex = (color: THREE.Color) => `#${color.getHexString(THREE.SRGBColorSpace)
  * A backdrop that flatters a finish and keeps it readable, balancing light and
  * dark stages:
  * - silver metals (chrome, brushed, titanium) → white studio; their reflections carry the contrast;
+ * - clear, colourless glass → cool grey sweep: glass shows what is behind it, so a dark
+ *   stage turns it into a dark plate, and pure white makes it vanish;
  * - light or luminous objects (clear/frosted glass, white ceramic, gold, pale tinted glass)
  *   → a dark stage tinted with their hue, where highlights and refraction glow;
  * - dark or deep objects (black, obsidian, cobalt, copper, bronze)
  *   → a light stage: a pastel of their hue, or white for neutral blacks.
  */
-export function autoBackdrop(color: string, metalness = 0): Backdrop {
+export function autoBackdrop(color: string, metalness = 0, transmission = 0): Backdrop {
   const hsl = { h: 0, s: 0, l: 0 };
   new THREE.Color(color).getHSL(hsl, THREE.SRGBColorSpace);
   const neutral = hsl.s < 0.14;
@@ -26,6 +30,7 @@ export function autoBackdrop(color: string, metalness = 0): Backdrop {
 
   if (neutral) {
     if (metalness > 0.5 && hsl.l > 0.45) return WHITE_STUDIO;
+    if (transmission > 0.6 && light) return GLASS_STUDIO;
     return light ? DARK_STUDIO : WHITE_STUDIO;
   }
 

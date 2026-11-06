@@ -315,8 +315,8 @@ export function Studio() {
 
   // Automatic backdrop: follows the finish colour. Manual picks switch it off.
   const target = useMemo(
-    () => (autoStage ? autoBackdrop(material.tint, material.metalness) : { center: bgCenter, edge: bgEdge }),
-    [autoStage, material.tint, material.metalness, bgCenter, bgEdge],
+    () => (autoStage ? autoBackdrop(material.tint, material.metalness, material.transmission) : { center: bgCenter, edge: bgEdge }),
+    [autoStage, material.tint, material.metalness, material.transmission, bgCenter, bgEdge],
   );
   // The displayed stage glides to its target instead of snapping.
   const [stage, setStage] = useState(target);

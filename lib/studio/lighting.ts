@@ -32,6 +32,13 @@ export type LightRig = {
    * `panelScale` dims the synthetic panels so they complement rather than swamp it.
    */
   hdri?: { intensity: number; rotation: number; panelScale: number };
+  /**
+   * Soft radial sweep in front of the object, low and to the left, where flat
+   * front faces reflect from the default 3/4 view. Without it those faces
+   * mirror the dark lower room and read as black plates. Added on top of the
+   * room (additive), so strips and HDRI stay visible.
+   */
+  front?: { intensity: number; color: string };
   ambient: number;
   key: { position: [number, number, number]; intensity: number; color: string };
   fill: { position: [number, number, number]; intensity: number; color: string };
@@ -48,6 +55,7 @@ export const lightRigs: LightRig[] = [
     ambientColor: "#07090f",
     sky: { top: "#d7deec", horizon: "#5b6478", bottom: "#0b0d13", intensity: 1 },
     hdri: { intensity: 0.4, rotation: Math.PI * 0.75, panelScale: 0.8 },
+    front: { intensity: 0.55, color: "#eef2fa" },
     ambient: 0.35,
     key: { position: [8, 12, 10], intensity: 1.6, color: "#fff8ef" },
     fill: { position: [-10, -4, 6], intensity: 0.5, color: "#dce6ff" },
@@ -68,6 +76,7 @@ export const lightRigs: LightRig[] = [
     swatch: "linear-gradient(120deg,#39e1ff 0%,#5b7cff 40%,#9b5cff 70%,#ff5cc8 100%)",
     ambientColor: "#070816",
     sky: { top: "#8e9bff", horizon: "#3b2c7a", bottom: "#07061a", intensity: 0.9 },
+    front: { intensity: 0.35, color: "#c9d0ff" },
     ambient: 0.3,
     key: { position: [6, 10, 10], intensity: 1.3, color: "#f2f4ff" },
     fill: { position: [-9, -2, 6], intensity: 0.9, color: "#7f8cff" },
@@ -85,6 +94,7 @@ export const lightRigs: LightRig[] = [
     swatch: "linear-gradient(135deg,#ffe2b0 0%,#ff9d5c 50%,#3a2a4f 100%)",
     ambientColor: "#140d12",
     sky: { top: "#ffd9ad", horizon: "#7a4e44", bottom: "#100a0b", intensity: 0.95 },
+    front: { intensity: 0.45, color: "#ffe2c2" },
     ambient: 0.35,
     key: { position: [10, 8, 6], intensity: 1.9, color: "#ffd2a1" },
     fill: { position: [-10, 2, 4], intensity: 0.5, color: "#8fa8ff" },
@@ -102,6 +112,7 @@ export const lightRigs: LightRig[] = [
     ambientColor: "#1a1d26",
     sky: { top: "#ffffff", horizon: "#9aa3b5", bottom: "#2a2e38", intensity: 1 },
     hdri: { intensity: 0.5, rotation: Math.PI * 0.75, panelScale: 0.7 },
+    front: { intensity: 0.5, color: "#ffffff" },
     ambient: 0.7,
     key: { position: [0, 14, 8], intensity: 1.2, color: "#ffffff" },
     fill: { position: [0, -6, 8], intensity: 0.6, color: "#ffffff" },

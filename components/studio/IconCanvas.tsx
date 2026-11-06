@@ -271,7 +271,7 @@ function CameraRig({
     const max = icon ? Math.max(icon.size.x, icon.size.y, icon.size.z) * 0.1 : 10;
     const fov = THREE.MathUtils.degToRad(lens);
     // Leave breathing room around the object, like a product shot.
-    return (max / (2 * Math.tan(fov / 2))) * 1.8 + 2.5;
+    return (max / (2 * Math.tan(fov / 2))) * 2.6 + 2.5;
   }, [icon, lens]);
 
   useEffect(() => {
@@ -420,6 +420,49 @@ function HdriDome({ texture, intensity, rotation }: { texture: THREE.Texture; in
   );
 }
 
+/** Centre of the front sweep: low and slightly left, so it covers both the 3/4 and the straight-on views. */
+const FRONT_SWEEP_DIR = new THREE.Vector3(-0.15, -0.45, 1).normalize();
+
+/**
+ * Additive radial softbox facing the object from the front-low-left, so front
+ * caps on metal and glass catch a light falloff instead of the dark floor of the room.
+ */
+function FrontSweep({ color, intensity }: { color: string; intensity: number }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0, "rgba(255,255,255,1)");
+      g.addColorStop(0.35, "rgba(255,255,255,0.75)");
+      g.addColorStop(0.7, "rgba(255,255,255,0.22)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 128, 128);
+    }
+    const map = new THREE.CanvasTexture(canvas);
+    map.colorSpace = THREE.SRGBColorSpace;
+    return map;
+  }, []);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const tint = useMemo(() => new THREE.Color(color).multiplyScalar(intensity), [color, intensity]);
+  const position = useMemo(() => FRONT_SWEEP_DIR.clone().multiplyScalar(14).toArray(), []);
+  return (
+    <Lightformer position={position} scale={[50, 30, 1]} target={[0, 0, 0]}>
+      <meshBasicMaterial
+        map={texture}
+        color={tint}
+        transparent
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        toneMapped={false}
+        side={THREE.DoubleSide}
+      />
+    </Lightformer>
+  );
+}
+
 type RigEnvironmentProps = {
   rig: LightRigDef;
   resolution: number;
@@ -444,6 +487,7 @@ function RigEnvironmentContent({ rig, resolution, angle, power, hdr }: RigEnviro
         <SkyDome sky={rig.sky} />
       )}
       <group rotation={[0, rad, 0]}>
+        {rig.front && <FrontSweep color={rig.front.color} intensity={rig.front.intensity * power} />}
         {rig.panels.map((panel, index) => (
           <Lightformer
             key={index}

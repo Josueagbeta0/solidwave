@@ -97,7 +97,36 @@ function finishGeometry(geometry: THREE.BufferGeometry, smooth: boolean) {
   }
   const creased = toCreasedNormals(geometry, CREASE_ANGLE);
   if (creased !== geometry) geometry.dispose();
+  flattenCaps(creased);
   return creased;
+}
+
+/**
+ * Keeps the flat front/back faces perfectly flat. Creasing averages the first
+ * bevel segment into the cap's edge vertices, which tilts their normals and
+ * draws diagonal streaks across large triangles on mirror finishes. The bevel
+ * side keeps its smooth normals, so the edge still rolls off softly.
+ */
+function flattenCaps(geometry: THREE.BufferGeometry) {
+  if (geometry.index) return;
+  const position = geometry.getAttribute("position");
+  const normal = geometry.getAttribute("normal");
+  if (!position || !normal) return;
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const face = new THREE.Vector3();
+  for (let i = 0; i + 2 < position.count; i += 3) {
+    a.fromBufferAttribute(position, i);
+    b.fromBufferAttribute(position, i + 1);
+    c.fromBufferAttribute(position, i + 2);
+    face.subVectors(c, b).cross(a.sub(b));
+    if (face.lengthSq() < 1e-20) continue;
+    face.normalize();
+    if (Math.abs(face.z) < 0.9999) continue;
+    for (let k = 0; k < 3; k++) normal.setXYZ(i + k, 0, 0, Math.sign(face.z));
+  }
+  normal.needsUpdate = true;
 }
 
 function centerZ(geometry: THREE.BufferGeometry) {
