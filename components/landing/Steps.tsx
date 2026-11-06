@@ -8,8 +8,8 @@ const wave = "M58 52C64 40 72 40 78 52S92 64 102 52V60C92 72 84 72 78 60S64 48 5
 const steps = [
   {
     n: "01",
-    title: "Drop anything flat",
-    body: "SVG paths are read exactly. PNG, JPG and WebP are traced into clean outlines, holes and fine detail included.",
+    title: "Déposez un visuel plat",
+    body: "Les tracés SVG sont lus à l’identique. Les PNG, JPG et WebP sont vectorisés en contours nets, trous et détails fins compris.",
     art: (
       <svg viewBox="0 0 160 100" className="h-full w-full" aria-hidden="true">
         <rect x="38" y="20" width="84" height="62" rx="12" fill="#fff" stroke="#0c0a0926" strokeDasharray="4 4" />
@@ -20,8 +20,8 @@ const steps = [
   },
   {
     n: "02",
-    title: "Give it depth",
-    body: `Extrude, stack, inflate or emboss in real millimetres, round or chamfer the edges, then pick from ${finishes.length} finishes.`,
+    title: "Donnez-lui du volume",
+    body: `Extrudé, empilé, gonflé ou en relief, en vrais millimètres, avec des arêtes arrondies ou chanfreinées, puis ${finishes.length} finitions au choix.`,
     art: (
       <svg viewBox="0 0 160 100" className="h-full w-full" aria-hidden="true">
         <path d={wave} fill="#0c0a091a" transform="translate(9 -9)" />
@@ -32,8 +32,8 @@ const steps = [
   },
   {
     n: "03",
-    title: "Ship it anywhere",
-    body: "Render a 4K PNG, record a looping turntable video, or export GLB for the web and STL for your printer.",
+    title: "Exportez partout",
+    body: "Générez un PNG en 4K, enregistrez une vidéo 360° qui boucle, ou exportez en GLB pour le web et en STL pour l’impression.",
     art: (
       <svg viewBox="0 0 160 100" className="h-full w-full" aria-hidden="true">
         {["PNG", "MP4", "GLB", "STL"].map((label, index) => (
@@ -54,14 +54,14 @@ export function Steps() {
     <section id="how" className="frame scroll-mt-24 pt-[var(--section)]" aria-labelledby="how-title">
       <Reveal className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-10 max-tab:grid-cols-1">
         <div>
-          <p className="eyebrow">How it works</p>
+          <p className="eyebrow">Fonctionnement</p>
           <h2 id="how-title" className="heading-section mt-5">
-            From flat to <span className="serif-accent">finished</span> in three moves.
+            Du plat au <span className="serif-accent">volume</span> en trois gestes.
           </h2>
         </div>
         <p className="text-lead max-w-[42ch] justify-self-end max-tab:justify-self-start">
-          No modelling software, no learning curve. Every setting has a sensible default and a
-          one-line explanation.
+          Aucun logiciel 3D, rien à apprendre. Chaque réglage a une valeur par défaut sensée et
+          une explication d’une ligne.
         </p>
       </Reveal>
 

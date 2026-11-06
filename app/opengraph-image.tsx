@@ -32,10 +32,10 @@ export default function OpengraphImage() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ fontSize: 104, fontWeight: 700, lineHeight: 0.95, letterSpacing: -5, maxWidth: 980 }}>
-            Your logo, made solid.
+            Votre logo, en relief.
           </div>
           <div style={{ fontSize: 32, color: "#66615b", maxWidth: 900 }}>
-            Glass, chrome and gold renders, turntable videos, GLB and STL — in your browser.
+            Rendus verre, chrome et or, vidéos 360°, GLB et STL — dans votre navigateur.
           </div>
         </div>
         <div style={{ display: "flex", gap: 12 }}>

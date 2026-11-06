@@ -4,7 +4,7 @@ import { Studio } from "@/components/studio/Studio";
 export const metadata: Metadata = {
   title: "Studio",
   description:
-    "Trace any logo, give it depth and a finish, then render a 4K PNG or export GLB and STL. Runs entirely in your browser.",
+    "Vectorisez n’importe quel logo, donnez-lui du volume et une finition, puis générez un PNG en 4K, une vidéo 360° ou des fichiers GLB et STL. Tout tourne dans votre navigateur.",
 };
 
 export default function StudioPage() {

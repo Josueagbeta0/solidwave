@@ -7,10 +7,10 @@ import { Reveal } from "@/components/motion";
 import { finishes, type FinishGroup } from "@/lib/studio/materials";
 
 const groups: { id: FinishGroup; label: string; blurb: string }[] = [
-  { id: "glass", label: "Glass", blurb: "Real refraction and tinted depth, from crystal to smoked obsidian." },
-  { id: "liquid", label: "Liquid", blurb: "Dispersive glass that splits light into a spectrum at every edge." },
-  { id: "metal", label: "Metal", blurb: "Polished, brushed and anodised metals with physically based reflections." },
-  { id: "color", label: "Colour", blurb: "Any colour you like, with full control over gloss and metalness." },
+  { id: "glass", label: "Verre", blurb: "Une vraie réfraction et une teinte en profondeur, du cristal à l’obsidienne fumée." },
+  { id: "liquid", label: "Liquide", blurb: "Un verre dispersif qui décompose la lumière en arc-en-ciel sur chaque arête." },
+  { id: "metal", label: "Métal", blurb: "Métaux polis, brossés ou anodisés, aux reflets physiquement réalistes." },
+  { id: "color", label: "Couleur", blurb: "La couleur de votre choix, avec un contrôle total de la brillance et du métallique." },
 ];
 
 export function Finishes() {
@@ -25,13 +25,13 @@ export function Finishes() {
       aria-labelledby="finishes-title"
     >
       <Reveal className="flex flex-col items-center text-center">
-        <p className="eyebrow">Finish library</p>
+        <p className="eyebrow">Bibliothèque de finitions</p>
         <h2 id="finishes-title" className="heading-section mt-5 max-w-[16ch]">
-          {finishes.length} finishes, all <span className="serif-accent">physically</span> based.
+          {finishes.length} finitions, toutes <span className="serif-accent">physiquement</span> réalistes.
         </h2>
         <div
           role="tablist"
-          aria-label="Finish family"
+          aria-label="Famille de finitions"
           className="mt-10 flex rounded-[14px] bg-well-strong p-1"
         >
           {groups.map((item) => (

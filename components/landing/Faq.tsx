@@ -2,36 +2,36 @@ import { Reveal } from "@/components/motion";
 
 const faqs = [
   {
-    q: "Do I need to know 3D software?",
-    a: "Not at all. Import a file, pick a form and a finish, and the studio handles geometry, lighting and rendering. Every setting has a sensible default and a one-line explanation.",
+    q: "Faut-il connaître un logiciel 3D ?",
+    a: "Pas du tout. Importez un fichier, choisissez un volume et une finition : le studio s’occupe de la géométrie, de l’éclairage et du rendu. Chaque réglage a une valeur par défaut sensée et une explication d’une ligne.",
   },
   {
-    q: "Which files can I import?",
-    a: "SVG gives the most accurate result because its paths are used directly. PNG, JPG and WebP are traced automatically; a mark with a clear silhouette on a plain or transparent background works best.",
+    q: "Quels fichiers puis-je importer ?",
+    a: "Le SVG donne le résultat le plus fidèle, car ses tracés sont utilisés directement. Les PNG, JPG et WebP sont vectorisés automatiquement ; un logo à la silhouette nette sur fond uni ou transparent donne les meilleurs résultats.",
   },
   {
-    q: "Are my files uploaded anywhere?",
-    a: "No. Tracing, modelling and rendering all run locally in your browser using your GPU. Nothing is sent to a server.",
+    q: "Mes fichiers sont-ils envoyés quelque part ?",
+    a: "Non. La vectorisation, la modélisation et le rendu tournent dans votre navigateur, sur votre carte graphique. Rien n’est envoyé à un serveur.",
   },
   {
-    q: "How big can the PNG renders be?",
-    a: "Up to 4096 × 4096 pixels. Smaller sizes are supersampled for extra-clean edges. 4K needs a reasonably recent GPU; if it fails, 2K always works.",
+    q: "Quelle taille pour les rendus PNG ?",
+    a: "Jusqu’à 4096 × 4096 pixels. Les petites tailles sont suréchantillonnées pour des bords impeccables. La 4K demande une carte graphique assez récente ; si elle échoue, la 2K fonctionne toujours.",
   },
   {
-    q: "Can I export an animation?",
-    a: "Yes. Record a seamless 360° turntable loop in square, vertical or landscape format, with your backdrop and lighting. It saves as MP4 in Chrome and Edge, and WebM elsewhere.",
+    q: "Puis-je exporter une animation ?",
+    a: "Oui. Enregistrez une boucle 360° parfaitement fluide, en carré, vertical ou paysage, avec votre fond et votre éclairage. La vidéo est encodée image par image en MP4, à 60 images par seconde.",
   },
   {
-    q: "What are Looks?",
-    a: "Complete art directions applied in one click: finish, lighting, backdrop, floor and post-processing tuned together. Every setting stays editable afterwards.",
+    q: "Que sont les ambiances ?",
+    a: "Des directions artistiques complètes appliquées en un clic : finition, éclairage, fond, sol et effets réglés ensemble. Chaque réglage reste modifiable ensuite.",
   },
   {
-    q: "Can I 3D print the result?",
-    a: "Yes. STL exports are closed meshes measured in millimetres, using the width, height and depth you set in the studio.",
+    q: "Puis-je imprimer le résultat en 3D ?",
+    a: "Oui. Les exports STL sont des maillages fermés, en millimètres, aux dimensions que vous avez réglées dans le studio.",
   },
   {
-    q: "Can I use the renders commercially?",
-    a: "Your renders are yours. Just make sure you have the rights to the logo or artwork you import.",
+    q: "Puis-je utiliser les rendus à des fins commerciales ?",
+    a: "Vos rendus vous appartiennent. Assurez-vous simplement d’avoir les droits sur le logo ou le visuel que vous importez.",
   },
 ];
 
@@ -42,7 +42,7 @@ export function Faq() {
         <Reveal>
           <p className="eyebrow">FAQ</p>
           <h2 id="faq-title" className="heading-section mt-5">
-            Good questions, <span className="serif-accent">straight</span> answers.
+            Bonnes questions, réponses <span className="serif-accent">claires.</span>
           </h2>
         </Reveal>
         <Reveal delay={100} className="divide-y divide-hairline border-y border-hairline">

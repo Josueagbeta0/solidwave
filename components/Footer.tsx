@@ -3,21 +3,21 @@ import { LogoMark, Wordmark } from "@/components/LogoMark";
 
 const columns = [
   {
-    title: "Product",
+    title: "Produit",
     links: [
       { href: "/studio", label: "Studio" },
-      { href: "/#finishes", label: "Finishes" },
-      { href: "/#features", label: "Features" },
-      { href: "/#formats", label: "Export formats" },
+      { href: "/#finishes", label: "Finitions" },
+      { href: "/#features", label: "Fonctionnalités" },
+      { href: "/#formats", label: "Formats d’export" },
     ],
   },
   {
-    title: "Start from",
+    title: "Partir de",
     links: [
-      { href: "/studio?sample=solidwave&finish=chrome", label: "Chrome wave" },
-      { href: "/studio?sample=bolt&finish=gold", label: "Gold bolt" },
-      { href: "/studio?sample=heart&finish=rose", label: "Rose glass heart" },
-      { href: "/studio?sample=ring&finish=chrome", label: "Chrome ring" },
+      { href: "/studio?sample=solidwave&finish=chrome", label: "Vague chromée" },
+      { href: "/studio?sample=bolt&finish=gold", label: "Éclair doré" },
+      { href: "/studio?sample=heart&finish=rose", label: "Cœur en verre rosé" },
+      { href: "/studio?sample=ring&finish=chrome", label: "Anneau chromé" },
     ],
   },
 ];
@@ -32,8 +32,8 @@ export function Footer() {
             <Wordmark className="text-[18px]" />
           </Link>
           <p className="mt-4 max-w-[34ch] text-[14px] leading-[1.6] text-ink-3">
-            Flat logos in, solid objects out. Made for designers who want depth without opening a
-            3D package.
+            Des logos plats en entrée, des objets en volume en sortie. Pour les designers qui veulent
+            du relief sans ouvrir un logiciel 3D.
           </p>
         </div>
         {columns.map((column) => (
@@ -55,8 +55,8 @@ export function Footer() {
         ))}
       </div>
       <div className="frame flex flex-wrap items-center justify-between gap-3 border-t border-hairline py-6 text-[12.5px] text-ink-4">
-        <span>© {new Date().getFullYear()} SolidWave. All rights reserved.</span>
-        <span className="font-mono">Rendered in your browser · No uploads</span>
+        <span>© {new Date().getFullYear()} SolidWave. Tous droits réservés.</span>
+        <span className="font-mono">Rendu dans votre navigateur · Aucun envoi</span>
       </div>
       {/* Oversized wordmark that bleeds off the bottom edge. */}
       <div aria-hidden="true" className="frame -mb-[0.22em] select-none overflow-hidden">

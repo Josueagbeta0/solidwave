@@ -13,16 +13,16 @@ export function Cta() {
           <LogoMark size={560} className="absolute -bottom-40 left-1/2 -translate-x-1/2 text-white/[0.04]" />
         </div>
         <h2 id="cta-title" className="heading-section mx-auto max-w-[14ch]">
-          Give your logo some <span className="serif-accent">weight.</span>
+          Donnez du <span className="serif-accent">poids</span> à votre logo.
         </h2>
         <p className="mx-auto mt-6 max-w-[44ch] text-[18px] leading-[1.55] text-white/60 [text-wrap:pretty]">
-          Free, in your browser, and nothing to install. Your first render takes about a minute.
+          Gratuit, dans votre navigateur, rien à installer. Votre premier rendu prend environ une minute.
         </p>
         <Link
           href="/studio"
           className="focus-ring group mt-10 inline-flex h-12 items-center gap-2 rounded-[14px] bg-white px-6 text-[15px] font-medium text-ink press [--press:.96] [--ring-offset:3px]"
         >
-          Open the studio
+          Ouvrir le studio
           <ArrowRight
             size={16}
             strokeWidth={2}

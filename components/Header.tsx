@@ -6,9 +6,9 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/LogoMark";
 
 const links = [
-  { href: "#how", label: "How it works" },
-  { href: "#finishes", label: "Finishes" },
-  { href: "#features", label: "Features" },
+  { href: "#how", label: "Fonctionnement" },
+  { href: "#finishes", label: "Finitions" },
+  { href: "#features", label: "Le studio" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -40,7 +40,7 @@ export function Header() {
         href="#main-content"
         className="focus-ring pointer-events-auto absolute -top-20 left-3 rounded-full bg-primary px-4 py-2 text-[14px] font-medium text-primary-foreground focus:top-3"
       >
-        Skip to content
+        Aller au contenu
       </a>
       {/* The bar condenses into a floating capsule once the page scrolls. */}
       <div
@@ -50,10 +50,10 @@ export function Header() {
             : "max-w-[1232px] rounded-[22px] bg-transparent px-4"
         } w-[calc(100%-24px)]`}
       >
-        <nav className="flex h-14 items-center justify-between gap-6" aria-label="Main">
+        <nav className="flex h-14 items-center justify-between gap-6" aria-label="Principale">
           <Link
             href="/"
-            aria-label="SolidWave home"
+            aria-label="Accueil SolidWave"
             className="focus-ring group flex items-center gap-2 rounded-lg pl-1.5 [--ring-offset:4px]"
           >
             <LogoMark
@@ -81,7 +81,7 @@ export function Header() {
               href="/studio"
               className="focus-ring group/cta inline-flex h-10 items-center gap-1.5 rounded-[14px] bg-primary px-4 text-[14px] font-medium text-primary-foreground press [--press:.96] [--ring-offset:3px]"
             >
-              Open studio
+              Ouvrir le studio
               <ArrowRight
                 size={15}
                 strokeWidth={2}
@@ -93,7 +93,7 @@ export function Header() {
               onClick={() => setOpen((value) => !value)}
               aria-expanded={open}
               aria-controls="mobile-nav"
-              aria-label={open ? "Close menu" : "Open menu"}
+              aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
               className="focus-ring hidden size-10 place-items-center rounded-[14px] bg-well-strong text-ink [--ring-offset:2px] max-mid:grid"
             >
               {open ? <X size={18} strokeWidth={1.8} /> : <Menu size={18} strokeWidth={1.8} />}

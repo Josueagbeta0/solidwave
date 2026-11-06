@@ -1,7 +1,8 @@
 "use client";
 
 import * as THREE from "three";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 import {
   AccumulativeShadows,
   ContactShadows,
@@ -23,9 +24,10 @@ import {
   ToneMappingMode,
   type EffectComposer as EffectComposerImpl,
 } from "postprocessing";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GLTFExporter, STLExporter } from "three-stdlib";
+import { ArrayBufferTarget, Muxer } from "mp4-muxer";
 import { createMaterial } from "@/lib/studio/materials";
 import { rigById, type LightRig as LightRigDef } from "@/lib/studio/lighting";
 import { createFloorFade, FLOOR_SIZE } from "@/lib/studio/floor";
@@ -77,6 +79,35 @@ const postToneMap: Record<ToneMap, ToneMappingMode> = {
   aces: ToneMappingMode.ACES_FILMIC,
 };
 
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+function withTimeout<T>(promise: Promise<T>, ms: number) {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error("Encoder timed out")), ms)),
+  ]);
+}
+
+/** First H.264 profile the browser can hardware/software encode at this size, or null. */
+async function pickH264Codec(width: number, height: number, fps: number) {
+  if (typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined") return null;
+  for (const codec of ["avc1.640033", "avc1.4d0033", "avc1.42003e"]) {
+    try {
+      const { supported } = await VideoEncoder.isConfigSupported({
+        codec,
+        width,
+        height,
+        bitrate: 18_000_000,
+        framerate: fps,
+      });
+      if (supported) return codec;
+    } catch {
+      /* try the next profile */
+    }
+  }
+  return null;
+}
+
 function download(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -104,6 +135,26 @@ function Exposure({ exposure }: { exposure: number }) {
   useEffect(() => {
     scene.environmentIntensity = exposure;
   }, [scene, exposure]);
+  return null;
+}
+
+/**
+ * On-demand rendering helper. The studio canvas only draws when something
+ * changes; when `token` changes this asks for `frames` consecutive frames so
+ * multi-pass effects (transmission, mirror, contact and soft shadows) settle.
+ */
+function Settle({ token, frames }: { token: string; frames: number }) {
+  const invalidate = useThree((state) => state.invalidate);
+  const left = useRef(0);
+  useEffect(() => {
+    left.current = frames;
+    invalidate();
+  }, [token, frames, invalidate]);
+  useFrame((state) => {
+    if (left.current <= 0) return;
+    left.current -= 1;
+    state.invalidate();
+  });
   return null;
 }
 
@@ -210,6 +261,7 @@ function CameraRig({
 }) {
   const camera = useThree((state) => state.camera) as THREE.PerspectiveCamera;
   const controls = useThree((state) => state.controls) as OrbitControlsImpl | null;
+  const invalidate = useThree((state) => state.invalidate);
   const animation = useRef<{ from: THREE.Vector3; to: THREE.Vector3; progress: number } | null>(
     null,
   );
@@ -240,16 +292,20 @@ function CameraRig({
     } else {
       animation.current = { from: camera.position.clone(), to, progress: 0 };
     }
+    invalidate();
     const cancel = () => {
       animation.current = null;
     };
     controls.addEventListener("start", cancel);
     return () => controls.removeEventListener("start", cancel);
-  }, [view, distance, controls, camera, fitTick]);
+  }, [view, distance, controls, camera, fitTick, invalidate]);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     if (!animation.current) return;
-    animation.current.progress = Math.min(1, animation.current.progress + delta * 3.6);
+    // On-demand rendering: keep asking for frames until the move lands.
+    state.invalidate();
+    // Clamp delta: the first frame after an idle period would otherwise jump.
+    animation.current.progress = Math.min(1, animation.current.progress + Math.min(delta, 1 / 30) * 3.6);
     const t = 1 - Math.pow(1 - animation.current.progress, 4);
     camera.position.lerpVectors(animation.current.from, animation.current.to, t);
     camera.lookAt(0, 0, 0);
@@ -279,16 +335,22 @@ function IconModel({
       return;
     }
     const time = state.clock.elapsedTime;
+    const step = Math.min(delta, 1 / 30);
     if (settings.autoRotate) {
       if (settings.motion === "turn") {
-        group.current.rotation.y += delta * settings.rotateSpeed * 0.85;
+        group.current.rotation.y += step * settings.rotateSpeed * 0.85;
       } else {
         group.current.rotation.y = Math.sin(time * settings.rotateSpeed * 0.55) * 0.42;
       }
+      // Gentle float only while the turntable runs; at rest the scene is still, so nothing re-renders.
+      group.current.position.y = Math.sin(time * 0.75) * 0.06;
     } else {
-      group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, 0, 6, delta);
+      group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, 0, 6, step);
+      group.current.position.y = THREE.MathUtils.damp(group.current.position.y, 0, 6, step);
+      if (Math.abs(group.current.rotation.y) > 1e-4 || Math.abs(group.current.position.y) > 1e-4) {
+        state.invalidate();
+      }
     }
-    group.current.position.y = Math.sin(time * 0.75) * 0.06;
   });
 
   if (!icon) return null;
@@ -339,6 +401,85 @@ export function SkyDome({ sky }: { sky: LightRigDef["sky"] }) {
   );
 }
 
+/** CC0 studio HDRI (Poly Haven, "Studio Small 09" by Sergej Majboroda). */
+export const STUDIO_HDRI = "/hdri/studio_small_09_1k.hdr";
+
+/** The photographed studio wrapped around the scene as a dome, with adjustable brightness. */
+function HdriDome({ texture, intensity, rotation }: { texture: THREE.Texture; intensity: number; rotation: number }) {
+  return (
+    <mesh scale={60} rotation={[0, rotation, 0]}>
+      <sphereGeometry args={[1, 64, 32]} />
+      <meshBasicMaterial
+        map={texture}
+        side={THREE.BackSide}
+        color={[intensity, intensity, intensity]}
+        toneMapped={false}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+type RigEnvironmentProps = {
+  rig: LightRigDef;
+  resolution: number;
+  /** Degrees; walks the light panels (and the HDRI) around the object. */
+  angle: number;
+  power: number;
+};
+
+function RigEnvironmentContent({ rig, resolution, angle, power, hdr }: RigEnvironmentProps & { hdr: THREE.Texture | null }) {
+  const rad = (angle * Math.PI) / 180;
+  const invalidate = useThree((state) => state.invalidate);
+  // The environment changes outside React's view of the scene: ask on-demand canvases to redraw.
+  useEffect(() => {
+    invalidate();
+  }, [hdr, rig, angle, power, invalidate]);
+  return (
+    <Environment key={`${rig.id}-${angle}-${power}-${resolution}-${hdr ? "hdr" : "sky"}`} resolution={resolution} frames={1}>
+      <color attach="background" args={[rig.ambientColor]} />
+      {hdr && rig.hdri ? (
+        <HdriDome texture={hdr} intensity={rig.hdri.intensity} rotation={rig.hdri.rotation + rad} />
+      ) : (
+        <SkyDome sky={rig.sky} />
+      )}
+      <group rotation={[0, rad, 0]}>
+        {rig.panels.map((panel, index) => (
+          <Lightformer
+            key={index}
+            form={panel.form}
+            intensity={panel.intensity * power * (hdr ? (rig.hdri?.panelScale ?? 1) : 1)}
+            position={panel.position}
+            rotation={panel.rotation ?? [0, 0, 0]}
+            scale={panel.scale}
+            color={panel.color}
+          />
+        ))}
+      </group>
+    </Environment>
+  );
+}
+
+function RigEnvironmentWithHdr(props: RigEnvironmentProps) {
+  const hdr = useLoader(HDRLoader, STUDIO_HDRI);
+  return <RigEnvironmentContent {...props} hdr={hdr} />;
+}
+
+/**
+ * The reflected world: a real photographed studio (for rigs that use one) or a
+ * gradient room, plus the rig's softbox and strip panels. While the HDRI loads,
+ * the gradient version stands in, so the object is never unlit.
+ */
+export function RigEnvironment(props: RigEnvironmentProps) {
+  const fallback = <RigEnvironmentContent {...props} hdr={null} />;
+  if (!props.rig.hdri) return fallback;
+  return (
+    <Suspense fallback={fallback}>
+      <RigEnvironmentWithHdr {...props} />
+    </Suspense>
+  );
+}
+
 function LightRig({ settings, resolution }: { settings: SceneSettings; resolution: number }) {
   const rig = rigById(settings.rig);
   const power = settings.studioLight;
@@ -356,27 +497,7 @@ function LightRig({ settings, resolution }: { settings: SceneSettings; resolutio
         intensity={rig.fill.intensity * power * exposure}
         color={rig.fill.color}
       />
-      <Environment
-        key={`${rig.id}-${settings.lightAngle}-${power}-${resolution}`}
-        resolution={resolution}
-        frames={1}
-      >
-        <color attach="background" args={[rig.ambientColor]} />
-        <SkyDome sky={rig.sky} />
-        <group rotation={[0, (settings.lightAngle * Math.PI) / 180, 0]}>
-          {rig.panels.map((panel, index) => (
-            <Lightformer
-              key={index}
-              form={panel.form}
-              intensity={panel.intensity * power}
-              position={panel.position}
-              rotation={panel.rotation ?? [0, 0, 0]}
-              scale={panel.scale}
-              color={panel.color}
-            />
-          ))}
-        </group>
-      </Environment>
+      <RigEnvironment rig={rig} resolution={resolution} angle={settings.lightAngle} power={power} />
     </>
   );
 }
@@ -472,7 +593,8 @@ function Floor({
           <MeshReflectorMaterial
             color={settings.floorColor}
             blur={[400, 120]}
-            resolution={shadowResolution}
+            // The reflection is blurred anyway; a smaller buffer is visually identical and far cheaper.
+            resolution={Math.min(shadowResolution, 768)}
             mixBlur={1}
             mixStrength={18}
             mixContrast={1}
@@ -570,6 +692,8 @@ function Bridge({
   const camera = useThree((state) => state.camera) as THREE.PerspectiveCamera;
   const advance = useThree((state) => state.advance);
   const setFrameloop = useThree((state) => state.setFrameloop);
+  const getState = useThree((state) => state.get);
+  const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
     const baseName = sizeName.replace(/\.[^.]+$/, "") || "solidwave";
@@ -641,14 +765,19 @@ function Bridge({
     const exportVideo = async ({ aspect, seconds, paint, onProgress }: VideoExportOptions) => {
       if (!icon) throw new Error("Nothing to record");
       const [width, height] = videoSizes[aspect];
-      const mime = [
-        "video/mp4;codecs=avc1.640028",
-        "video/mp4",
-        "video/webm;codecs=vp9",
-        "video/webm",
-      ].find((type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type));
-      if (!mime) throw new Error("This browser cannot record video");
-      const extension = mime.startsWith("video/mp4") ? "mp4" : "webm";
+      const fps = 60;
+      const frameCount = Math.round(seconds * fps);
+
+      // Frame-accurate path: WebCodecs H.264 + MP4 muxing. Every frame is rendered
+      // and encoded at an exact 1/60 s timestamp, so the loop is perfectly smooth
+      // however long each frame takes to render.
+      const codec = await pickH264Codec(width, height, fps);
+      const recorderMime = codec
+        ? null
+        : ["video/mp4;codecs=avc1.640028", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find(
+            (type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type),
+          );
+      if (!codec && !recorderMime) throw new Error("This browser cannot record video");
 
       // The backdrop never changes during the loop: paint it once.
       const backdrop = document.createElement("canvas");
@@ -666,6 +795,7 @@ function Bridge({
       const previousSize = gl.getSize(new THREE.Vector2());
       const previousRatio = gl.getPixelRatio();
       const previousAspect = camera.aspect;
+      const previousLoop = getState().frameloop;
 
       // Take over the render loop so every frame is rendered exactly once, at video size.
       setFrameloop("never");
@@ -677,16 +807,6 @@ function Bridge({
       else gl.setSize(width, height, false);
       stageRef.current?.repaint(width, height);
 
-      const stream = out.captureStream(60);
-      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 24_000_000 });
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunks.push(event.data);
-      };
-      const stopped = new Promise<void>((resolve) => {
-        recorder.onstop = () => resolve();
-      });
-
       const restore = () => {
         spinRef.current = null;
         gl.setPixelRatio(previousRatio);
@@ -696,41 +816,88 @@ function Bridge({
         camera.updateProjectionMatrix();
         stageRef.current?.repaint(previousSize.x, previousSize.y);
         setRecording(false);
-        setFrameloop("always");
+        setFrameloop(previousLoop);
+        invalidate();
       };
 
+      const start = performance.now();
+      const renderFrame = (index: number) => {
+        spinRef.current = (index / frameCount) * Math.PI * 2;
+        advance(start + (index * 1000) / fps);
+        ctx.drawImage(backdrop, 0, 0);
+        ctx.drawImage(gl.domElement, 0, 0, width, height, 0, 0, width, height);
+      };
+
+      let video: Blob;
+      let extension: string;
       try {
         // Warm-up frames let soft shadows and reflections settle before recording.
-        for (let i = 0; i < 12; i++) {
-          spinRef.current = 0;
-          advance(performance.now());
-        }
-        recorder.start(250);
-        const duration = seconds * 1000;
-        const start = performance.now();
-        await new Promise<void>((resolve) => {
-          const tick = () => {
-            // Wall-clock driven: on a slow GPU frames drop, but the loop keeps real speed.
-            const t = Math.min(1, (performance.now() - start) / duration);
-            spinRef.current = t * Math.PI * 2;
-            advance(performance.now());
-            ctx.drawImage(backdrop, 0, 0);
-            ctx.drawImage(gl.domElement, 0, 0, width, height, 0, 0, width, height);
-            onProgress?.(t);
-            if (t >= 1) resolve();
-            else requestAnimationFrame(tick);
+        for (let i = 0; i < 12; i++) renderFrame(0);
+
+        if (codec) {
+          const muxer = new Muxer({
+            target: new ArrayBufferTarget(),
+            video: { codec: "avc", width, height, frameRate: fps },
+            fastStart: "in-memory",
+          });
+          let failure: unknown = null;
+          const encoder = new VideoEncoder({
+            output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+            error: (error) => {
+              failure = error;
+            },
+          });
+          encoder.configure({ codec, width, height, bitrate: 18_000_000, framerate: fps });
+          const frameDuration = 1_000_000 / fps;
+          // Frame index 0 … n-1: the last frame stops one step short of 360°, so the loop is seamless.
+          for (let index = 0; index < frameCount; index++) {
+            if (failure) throw failure;
+            renderFrame(index);
+            const frame = new VideoFrame(out, {
+              timestamp: Math.round(index * frameDuration),
+              duration: Math.round(frameDuration),
+            });
+            encoder.encode(frame, { keyFrame: index % (fps * 2) === 0 });
+            frame.close();
+            onProgress?.((index + 1) / frameCount);
+            // Keep the page responsive and the encoder queue short.
+            while (encoder.encodeQueueSize > 6) await wait(4);
+            if (index % 4 === 0) await wait(0);
+          }
+          await withTimeout(encoder.flush(), 60_000);
+          encoder.close();
+          if (failure) throw failure;
+          muxer.finalize();
+          video = new Blob([muxer.target.buffer], { type: "video/mp4" });
+          extension = "mp4";
+        } else {
+          const mime = recorderMime as string;
+          const stream = out.captureStream(fps);
+          const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 24_000_000 });
+          const chunks: Blob[] = [];
+          recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) chunks.push(event.data);
           };
-          requestAnimationFrame(tick);
-        });
-        recorder.stop();
-        await stopped;
+          const stopped = new Promise<void>((resolve) => {
+            recorder.onstop = () => resolve();
+          });
+          recorder.start(250);
+          // Fallback: paced to real time, one frame per display refresh.
+          for (let index = 0; index < frameCount; index++) {
+            renderFrame(index);
+            onProgress?.((index + 1) / frameCount);
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+          recorder.stop();
+          await stopped;
+          stream.getTracks().forEach((track) => track.stop());
+          video = new Blob(chunks, { type: mime.split(";")[0] });
+          extension = mime.startsWith("video/mp4") ? "mp4" : "webm";
+        }
       } finally {
-        if (recorder.state !== "inactive") recorder.stop();
-        stream.getTracks().forEach((track) => track.stop());
         restore();
       }
 
-      const video = new Blob(chunks, { type: mime.split(";")[0] });
       // Some environments accept a codec but never emit data; never ship an empty file.
       if (video.size === 0) throw new Error("This browser produced no video data");
       download(video, `${baseName}-turntable.${extension}`);
@@ -771,6 +938,8 @@ function Bridge({
     setRecording,
     advance,
     setFrameloop,
+    getState,
+    invalidate,
   ]);
 
   return null;
@@ -881,6 +1050,9 @@ export function IconCanvas({
   return (
     <Canvas
       shadows="percentage"
+      // Render only when something changes, unless the scene is genuinely animating.
+      // While recording, the exporter drives every frame itself.
+      frameloop={recording ? "never" : settings.autoRotate ? "always" : "demand"}
       dpr={budget.dpr}
       gl={{
         antialias: !budget.post,
@@ -891,6 +1063,10 @@ export function IconCanvas({
       camera={{ position: [0, 0, 24], fov: settings.lens, near: 0.1, far: 2000 }}
       className="!absolute inset-0"
     >
+      <Settle
+        token={`${icon?.triangles ?? 0}-${icon?.size.x ?? 0}-${icon?.size.y ?? 0}-${icon?.size.z ?? 0}-${threeMaterial.uuid}-${stageKey ?? ""}-${JSON.stringify(settings)}`}
+        frames={settings.floor === "soft" ? 110 : 6}
+      />
       <RendererSettings toneMap={settings.toneMap} post={budget.post} />
       <Exposure exposure={settings.exposure} />
       <CameraRig view={settings.view} lens={settings.lens} icon={icon} fitTick={fitTick} />

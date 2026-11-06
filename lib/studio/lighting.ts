@@ -26,6 +26,12 @@ export type LightRig = {
    * instead of reflecting a uniform void.
    */
   sky: { top: string; horizon: string; bottom: string; intensity: number };
+  /**
+   * Optional photographed studio (HDRI) used instead of the gradient room.
+   * `intensity` scales the dome, `rotation` (radians) orients it, and
+   * `panelScale` dims the synthetic panels so they complement rather than swamp it.
+   */
+  hdri?: { intensity: number; rotation: number; panelScale: number };
   ambient: number;
   key: { position: [number, number, number]; intensity: number; color: string };
   fill: { position: [number, number, number]; intensity: number; color: string };
@@ -41,6 +47,7 @@ export const lightRigs: LightRig[] = [
     swatch: "linear-gradient(135deg,#f4f6fb 0%,#9aa3b5 55%,#2a2f3b 100%)",
     ambientColor: "#07090f",
     sky: { top: "#d7deec", horizon: "#5b6478", bottom: "#0b0d13", intensity: 1 },
+    hdri: { intensity: 0.4, rotation: Math.PI * 0.75, panelScale: 0.8 },
     ambient: 0.35,
     key: { position: [8, 12, 10], intensity: 1.6, color: "#fff8ef" },
     fill: { position: [-10, -4, 6], intensity: 0.5, color: "#dce6ff" },
@@ -57,7 +64,7 @@ export const lightRigs: LightRig[] = [
   },
   {
     id: "wave",
-    name: "Wave",
+    name: "Néon",
     swatch: "linear-gradient(120deg,#39e1ff 0%,#5b7cff 40%,#9b5cff 70%,#ff5cc8 100%)",
     ambientColor: "#070816",
     sky: { top: "#8e9bff", horizon: "#3b2c7a", bottom: "#07061a", intensity: 0.9 },
@@ -74,7 +81,7 @@ export const lightRigs: LightRig[] = [
   },
   {
     id: "golden",
-    name: "Golden hour",
+    name: "Heure dorée",
     swatch: "linear-gradient(135deg,#ffe2b0 0%,#ff9d5c 50%,#3a2a4f 100%)",
     ambientColor: "#140d12",
     sky: { top: "#ffd9ad", horizon: "#7a4e44", bottom: "#100a0b", intensity: 0.95 },
@@ -90,10 +97,11 @@ export const lightRigs: LightRig[] = [
   },
   {
     id: "softbox",
-    name: "Softbox",
+    name: "Boîte à lumière",
     swatch: "linear-gradient(180deg,#ffffff 0%,#dfe4ee 60%,#b9c1d1 100%)",
     ambientColor: "#1a1d26",
     sky: { top: "#ffffff", horizon: "#9aa3b5", bottom: "#2a2e38", intensity: 1 },
+    hdri: { intensity: 0.5, rotation: Math.PI * 0.75, panelScale: 0.7 },
     ambient: 0.7,
     key: { position: [0, 14, 8], intensity: 1.2, color: "#ffffff" },
     fill: { position: [0, -6, 8], intensity: 0.6, color: "#ffffff" },

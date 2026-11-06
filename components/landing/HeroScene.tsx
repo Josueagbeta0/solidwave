@@ -1,13 +1,8 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  ContactShadows,
-  Environment,
-  Lightformer,
-  MeshReflectorMaterial,
-} from "@react-three/drei";
-import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
+import { ContactShadows } from "@react-three/drei";
+import { EffectComposer, ToneMapping } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -15,8 +10,7 @@ import { SampleIcon } from "@/components/SampleIcon";
 import { sampleById, sampleSvg, type SampleId } from "@/lib/samples";
 import { buildIcon, disposeIcon } from "@/lib/studio/geometry";
 import { rigById } from "@/lib/studio/lighting";
-import { SkyDome, StageBackdrop } from "@/components/studio/IconCanvas";
-import { createFloorFade, FLOOR_SIZE } from "@/lib/studio/floor";
+import { RigEnvironment, StageBackdrop } from "@/components/studio/IconCanvas";
 import { createMaterial, finishById } from "@/lib/studio/materials";
 import { svgToShapes } from "@/lib/trace";
 import { paintHeroStage } from "@/lib/stage";
@@ -94,48 +88,14 @@ function CameraFit() {
 
 function Stage() {
   const rig = rigById("studio");
-  const fade = useMemo(() => createFloorFade(5, 20), []);
-  useEffect(() => () => fade?.dispose(), [fade]);
   return (
     <>
       <ambientLight intensity={rig.ambient} />
       <directionalLight position={rig.key.position} intensity={rig.key.intensity * 1.5} color={rig.key.color} />
       <directionalLight position={rig.fill.position} intensity={rig.fill.intensity * 1.5} color={rig.fill.color} />
-      <Environment resolution={512} frames={1}>
-        <color attach="background" args={[rig.ambientColor]} />
-        <SkyDome sky={rig.sky} />
-        {rig.panels.map((panel, index) => (
-          <Lightformer
-            key={index}
-            form={panel.form}
-            intensity={panel.intensity * 1.5}
-            position={panel.position}
-            rotation={panel.rotation ?? [0, 0, 0]}
-            scale={panel.scale}
-            color={panel.color}
-          />
-        ))}
-      </Environment>
+      <RigEnvironment rig={rig} resolution={512} angle={0} power={1.5} />
       <StageBackdrop paint={paintHeroStage} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.9, 0]}>
-        <planeGeometry args={[FLOOR_SIZE, FLOOR_SIZE]} />
-        <MeshReflectorMaterial
-          color="#e9e7e3"
-          blur={[500, 160]}
-          resolution={1024}
-          mixBlur={1}
-          mixStrength={4}
-          roughness={1}
-          metalness={0}
-          depthScale={1.2}
-          minDepthThreshold={0.4}
-          maxDepthThreshold={1.4}
-          mirror={0.5}
-          transparent
-          alphaMap={fade ?? undefined}
-        />
-      </mesh>
-      <ContactShadows position={[0, -2.88, 0]} opacity={0.42} scale={16} blur={2.8} far={8} frames={Infinity} />
+      <ContactShadows position={[0, -2.88, 0]} opacity={0.5} scale={16} blur={2.6} far={8} resolution={384} frames={Infinity} />
     </>
   );
 }
@@ -143,11 +103,11 @@ function Stage() {
 const shapeOptions: SampleId[] = ["solidwave", "spark", "heart", "bolt", "ring", "gem"];
 const finishOptions = [
   { id: "chrome", label: "Chrome" },
-  { id: "clear", label: "Glass" },
+  { id: "clear", label: "Verre" },
   { id: "holo", label: "Holo" },
-  { id: "gold", label: "Gold" },
-  { id: "sapphire", label: "Sapphire" },
-  { id: "black-metal", label: "Black" },
+  { id: "gold", label: "Or" },
+  { id: "sapphire", label: "Saphir" },
+  { id: "black-metal", label: "Noir" },
 ];
 
 export function HeroScene() {
@@ -170,7 +130,7 @@ export function HeroScene() {
   return (
     <div ref={wrapper} className="relative h-full w-full">
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         frameloop={visible ? "always" : "never"}
         gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
         camera={{ position: [0, 1.4, 16], fov: 28, near: 0.1, far: 200 }}
@@ -180,14 +140,13 @@ export function HeroScene() {
         <Stage />
         <Hero3D sampleId={sampleId} finishId={finishId} />
         <EffectComposer multisampling={4} frameBufferType={THREE.HalfFloatType}>
-          <Bloom mipmapBlur intensity={0.25} luminanceThreshold={0.95} luminanceSmoothing={0.2} radius={0.6} />
           <ToneMapping mode={ToneMappingMode.NEUTRAL} />
         </EffectComposer>
       </Canvas>
 
       {/* Controls: shape on the left, finish on the right (stacked on small screens). */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 max-tab:flex-col max-tab:items-center">
-        <div role="group" aria-label="Shape" className="glass pointer-events-auto flex items-center gap-0.5 rounded-[16px] p-1">
+        <div role="group" aria-label="Forme" className="glass pointer-events-auto flex items-center gap-0.5 rounded-[16px] p-1">
           {shapeOptions.map((id) => {
             const sample = sampleById(id);
             const active = id === sampleId;
@@ -210,7 +169,7 @@ export function HeroScene() {
         </div>
         <div
           role="group"
-          aria-label="Finish"
+          aria-label="Finition"
           className="glass no-scrollbar pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[16px] p-1"
         >
           {finishOptions.map((option) => {

@@ -46,9 +46,9 @@ export function Features() {
       aria-labelledby="features-title"
     >
       <Reveal className="max-w-[720px]">
-        <p className="eyebrow">The studio</p>
+        <p className="eyebrow">Le studio</p>
         <h2 id="features-title" className="heading-section mt-5">
-          Product-shot quality, <span className="serif-accent">without</span> the photo studio.
+          La qualité d’un packshot, <span className="serif-accent">sans</span> le studio photo.
         </h2>
       </Reveal>
 
@@ -57,11 +57,11 @@ export function Features() {
         <Tile
           dark
           className="col-span-4 row-span-2 max-tab:col-span-2 max-fold:col-span-1"
-          title="One-click Looks"
-          body="Eight complete art directions — finish, lighting, backdrop, floor and post-processing tuned together. Start from one, then tweak anything."
+          title="Ambiances en un clic"
+          body="Des directions artistiques complètes : finition, éclairage, fond, sol et effets réglés ensemble. Partez de l’une d’elles, puis ajustez tout."
         >
           <div className="grid h-full grid-cols-4 gap-3 max-fold:grid-cols-2">
-            {looks.map((look, index) => (
+            {looks.slice(0, 8).map((look, index) => (
               <div
                 key={look.id}
                 className="flex flex-col gap-2 transition-transform duration-500 ease-spring group-hover:-translate-y-1"
@@ -87,8 +87,8 @@ export function Features() {
         <Tile
           delay={80}
           className="col-span-2 max-fold:col-span-1"
-          title="Turntable video"
-          body="A seamless 360° loop in square, vertical or landscape, ready for social."
+          title="Vidéo 360°"
+          body="Une boucle parfaite en carré, vertical ou paysage, prête pour les réseaux sociaux."
         >
           <div className="grid h-full min-h-[140px] place-items-center">
             <div className="relative size-28 [perspective:400px]">
@@ -102,8 +102,8 @@ export function Features() {
         <Tile
           delay={120}
           className="col-span-2 max-fold:col-span-1"
-          title="Studio lighting"
-          body="Five rigs of softboxes and strip lights you can walk around the object."
+          title="Éclairage de studio"
+          body="Cinq éclairages de boîtes à lumière et de bandes lumineuses à faire tourner autour de l’objet."
         >
           <div className="flex h-full min-h-[140px] items-center gap-2">
             {lightRigs.map((rig) => (
@@ -122,8 +122,8 @@ export function Features() {
         <Tile
           delay={60}
           className="col-span-2 max-fold:col-span-1"
-          title="Soft shadows & mirror floors"
-          body="Area shadows from an overhead softbox, or a blurred mirror that melts into the backdrop."
+          title="Ombres douces et sols miroirs"
+          body="L’ombre douce d’une boîte à lumière au-dessus, ou un miroir flou qui se fond dans le décor."
         >
           <div className="grid h-full min-h-[140px] place-items-center">
             <div className="relative">
@@ -140,8 +140,8 @@ export function Features() {
         <Tile
           delay={100}
           className="col-span-2 max-fold:col-span-1"
-          title="Renders up to 4K"
-          body="Transparent or with the backdrop baked in. Small sizes are supersampled for clean edges."
+          title="Rendus jusqu’en 4K"
+          body="Avec fond transparent ou intégré. Les petites tailles sont suréchantillonnées pour des bords nets."
         >
           <div className="flex h-full min-h-[140px] items-end">
             <span className="text-[88px] font-semibold leading-none tracking-[-0.06em] max-phone:text-[68px]">
@@ -155,8 +155,8 @@ export function Features() {
         <Tile
           delay={140}
           className="col-span-2 max-fold:col-span-1"
-          title="Real millimetres"
-          body="Width, height and depth are true sizes, carried through to STL and GLB."
+          title="De vrais millimètres"
+          body="Largeur, hauteur et profondeur sont réelles, et conservées dans les fichiers STL et GLB."
         >
           <div className="flex h-full min-h-[140px] flex-col justify-center">
             <div className="flex h-10 items-end justify-between border-b border-ink/70">

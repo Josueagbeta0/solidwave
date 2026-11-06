@@ -36,7 +36,7 @@ export const samples: Sample[] = [
   },
   {
     id: "spark",
-    name: "Spark",
+    name: "Étincelle",
     color: "#39e1ff",
     viewBox: "0 0 24 24",
     finish: "clear",
@@ -44,7 +44,7 @@ export const samples: Sample[] = [
   },
   {
     id: "heart",
-    name: "Heart",
+    name: "Cœur",
     color: "#ff5c8a",
     viewBox: "0 0 24 24",
     finish: "rose",
@@ -54,7 +54,7 @@ export const samples: Sample[] = [
   },
   {
     id: "bolt",
-    name: "Bolt",
+    name: "Éclair",
     color: "#ffc53d",
     viewBox: "0 0 24 24",
     finish: "gold",
@@ -62,7 +62,7 @@ export const samples: Sample[] = [
   },
   {
     id: "bubble",
-    name: "Bubble",
+    name: "Bulle",
     color: "#9b5cff",
     viewBox: "0 0 24 24",
     finish: "milk",
@@ -72,7 +72,7 @@ export const samples: Sample[] = [
   },
   {
     id: "leaf",
-    name: "Leaf",
+    name: "Feuille",
     color: "#2fd38a",
     viewBox: "0 0 24 24",
     finish: "emerald",
@@ -82,7 +82,7 @@ export const samples: Sample[] = [
   },
   {
     id: "ring",
-    name: "Ring",
+    name: "Anneau",
     color: "#c9ced8",
     viewBox: "0 0 24 24",
     finish: "chrome",
@@ -90,7 +90,7 @@ export const samples: Sample[] = [
   },
   {
     id: "gem",
-    name: "Gem",
+    name: "Gemme",
     color: "#3d7bff",
     viewBox: "0 0 24 24",
     finish: "sapphire",
@@ -98,7 +98,7 @@ export const samples: Sample[] = [
   },
   {
     id: "cloud",
-    name: "Cloud",
+    name: "Nuage",
     color: "#e6ecf5",
     viewBox: "0 0 24 24",
     finish: "frosted",

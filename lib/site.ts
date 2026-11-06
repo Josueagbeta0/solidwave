@@ -1,9 +1,9 @@
 /** Brand constants. Change the name or URL here, not in components. */
 export const site = {
   name: "SolidWave",
-  tagline: "Turn flat logos into solid 3D",
+  tagline: "Vos logos plats en 3D",
   description:
-    "SolidWave turns any SVG or PNG into a true-to-size 3D object in glass, metal or colour. Render studio-grade PNGs up to 4K, or export GLB and STL. Everything runs in your browser.",
+    "SolidWave transforme n’importe quel SVG ou PNG en objet 3D à taille réelle, en verre, en métal ou en couleur. Rendus PNG de qualité studio jusqu’en 4K, vidéos 360°, exports GLB et STL. Tout tourne dans votre navigateur.",
   // Set NEXT_PUBLIC_SITE_URL in production so social previews resolve.
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 };

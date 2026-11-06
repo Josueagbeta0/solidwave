@@ -32,7 +32,7 @@ export const finishes: Finish[] = [
   // Glass
   {
     id: "clear",
-    name: "Clear",
+    name: "Clair",
     group: "glass",
     color: "#ffffff",
     metalness: 0,
@@ -47,7 +47,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "crystal",
-    name: "Crystal",
+    name: "Cristal",
     group: "glass",
     color: "#f4f8ff",
     metalness: 0,
@@ -64,7 +64,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "frosted",
-    name: "Frosted",
+    name: "Givré",
     group: "glass",
     color: "#f7f8fa",
     metalness: 0,
@@ -79,7 +79,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "milk",
-    name: "Milk",
+    name: "Lait",
     group: "glass",
     color: "#faf8f3",
     metalness: 0,
@@ -94,7 +94,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "smoke",
-    name: "Smoke",
+    name: "Fumé",
     group: "glass",
     color: "#8b8f97",
     metalness: 0,
@@ -109,7 +109,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "obsidian",
-    name: "Obsidian",
+    name: "Obsidienne",
     group: "glass",
     color: "#15161a",
     metalness: 0.1,
@@ -124,7 +124,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "sapphire",
-    name: "Sapphire",
+    name: "Saphir",
     group: "glass",
     color: "#6c9bff",
     metalness: 0,
@@ -139,7 +139,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "emerald",
-    name: "Emerald",
+    name: "Émeraude",
     group: "glass",
     color: "#7fe0b0",
     metalness: 0,
@@ -154,7 +154,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "amber",
-    name: "Amber",
+    name: "Ambre",
     group: "glass",
     color: "#ffd08a",
     metalness: 0,
@@ -184,7 +184,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "amethyst",
-    name: "Amethyst",
+    name: "Améthyste",
     group: "glass",
     color: "#dcc7ff",
     metalness: 0,
@@ -219,7 +219,7 @@ export const finishes: Finish[] = [
   // Liquid
   {
     id: "liquid",
-    name: "Liquid",
+    name: "Liquide",
     group: "liquid",
     color: "#17181c",
     metalness: 0.32,
@@ -239,7 +239,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "smoked",
-    name: "Smoked",
+    name: "Fumé liquide",
     group: "liquid",
     color: "#b9bcc4",
     metalness: 0,
@@ -255,7 +255,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "prism",
-    name: "Prism",
+    name: "Prisme",
     group: "liquid",
     color: "#ffffff",
     metalness: 0,
@@ -292,7 +292,7 @@ export const finishes: Finish[] = [
   // Metal
   {
     id: "gold",
-    name: "Gold",
+    name: "Or",
     group: "metal",
     color: "#f2c14e",
     metalness: 1,
@@ -302,7 +302,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "rose-gold",
-    name: "Rose gold",
+    name: "Or rose",
     group: "metal",
     color: "#e7a08a",
     metalness: 1,
@@ -322,7 +322,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "brushed",
-    name: "Brushed",
+    name: "Brossé",
     group: "metal",
     color: "#c9cdd4",
     metalness: 1,
@@ -342,7 +342,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "copper",
-    name: "Copper",
+    name: "Cuivre",
     group: "metal",
     color: "#b46a4a",
     metalness: 1,
@@ -352,7 +352,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "titanium",
-    name: "Titanium",
+    name: "Titane",
     group: "metal",
     color: "#9a9ea6",
     metalness: 1,
@@ -362,7 +362,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "black-metal",
-    name: "Black",
+    name: "Noir",
     group: "metal",
     color: "#1b1c20",
     metalness: 1,
@@ -382,7 +382,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "gunmetal",
-    name: "Gunmetal",
+    name: "Acier",
     group: "metal",
     color: "#4a5058",
     metalness: 1,
@@ -402,7 +402,7 @@ export const finishes: Finish[] = [
   },
   {
     id: "ceramic",
-    name: "Ceramic",
+    name: "Céramique",
     group: "metal",
     color: "#f3f2ee",
     metalness: 0.05,
@@ -415,7 +415,7 @@ export const finishes: Finish[] = [
   // Color
   {
     id: "color",
-    name: "Color",
+    name: "Couleur",
     group: "color",
     color: "#f2f3f5",
     metalness: 1,
@@ -505,20 +505,21 @@ export type BackgroundPreset = {
 };
 
 export const backgroundPresets: BackgroundPreset[] = [
-  { id: "midnight", name: "Midnight", center: "#1a2038", edge: "#05060b", dark: true },
-  { id: "wave", name: "Wave", center: "#2a2470", edge: "#06061a", dark: true },
+  { id: "white", name: "Blanc", center: "#ffffff", edge: "#e4e2de" },
+  { id: "midnight", name: "Minuit", center: "#1a2038", edge: "#05060b", dark: true },
+  { id: "wave", name: "Néon", center: "#2a2470", edge: "#06061a", dark: true },
   { id: "aurora", name: "Aurora", center: "#0f4a5c", edge: "#050b14", dark: true },
   { id: "studio", name: "Studio", center: "#f4f5f8", edge: "#c9ced8" },
-  { id: "paper", name: "Paper", center: "#ffffff", edge: "#f2f3f6" },
-  { id: "wall", name: "Wall", center: "#eceef2", edge: "#dfe2e7" },
+  { id: "paper", name: "Papier", center: "#ffffff", edge: "#f2f3f6" },
+  { id: "wall", name: "Mur", center: "#eceef2", edge: "#dfe2e7" },
   { id: "azure", name: "Azure", center: "#bcd5fb", edge: "#6ea8f0" },
-  { id: "sky", name: "Sky", center: "#dce9fd", edge: "#8ebcf8" },
-  { id: "sand", name: "Sand", center: "#efe3d2", edge: "#d8c3a5" },
-  { id: "blush", name: "Blush", center: "#f8e3ea", edge: "#e7b7c6" },
+  { id: "sky", name: "Ciel", center: "#dce9fd", edge: "#8ebcf8" },
+  { id: "sand", name: "Sable", center: "#efe3d2", edge: "#d8c3a5" },
+  { id: "blush", name: "Poudré", center: "#f8e3ea", edge: "#e7b7c6" },
   { id: "graphite", name: "Graphite", center: "#3a3d44", edge: "#1f2126", dark: true },
-  { id: "ink", name: "Ink", center: "#26282e", edge: "#101114", dark: true },
-  { id: "night", name: "Night", center: "#101a36", edge: "#050813", dark: true },
-  { id: "void", name: "Void", center: "#000000", edge: "#000000", dark: true },
+  { id: "ink", name: "Encre", center: "#26282e", edge: "#101114", dark: true },
+  { id: "night", name: "Nuit", center: "#101a36", edge: "#050813", dark: true },
+  { id: "void", name: "Néant", center: "#000000", edge: "#000000", dark: true },
 ];
 
 export function backgroundStyle(

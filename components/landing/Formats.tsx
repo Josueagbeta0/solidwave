@@ -4,26 +4,26 @@ const formats = [
   {
     ext: "PNG",
     color: "text-ink",
-    title: "For screens",
-    points: ["1K, 2K or 4K square", "Transparent or with backdrop", "Bloom and tone mapping baked in"],
+    title: "Pour les écrans",
+    points: ["Carré en 1K, 2K ou 4K", "Fond transparent ou intégré", "Effets de lumière inclus"],
   },
   {
     ext: "MP4",
     color: "text-ink",
-    title: "For social",
-    points: ["Seamless 360° turntable loop", "1:1, 9:16 or 16:9", "Backdrop and lighting included"],
+    title: "Pour les réseaux",
+    points: ["Boucle 360° sans coupure", "1:1, 9:16 ou 16:9", "Fond et éclairage inclus"],
   },
   {
     ext: "GLB",
     color: "text-ink",
-    title: "For the web & AR",
-    points: ["Binary glTF 2.0", "Sized in metres", "Drops into three.js, Spline, Blender"],
+    title: "Pour le web et la RA",
+    points: ["glTF 2.0 binaire", "Dimensions en mètres", "S’ouvre dans three.js, Spline, Blender"],
   },
   {
     ext: "STL",
     color: "text-ink",
-    title: "For printing",
-    points: ["Closed, watertight mesh", "Sized in millimetres", "Ready for any slicer"],
+    title: "Pour l’impression",
+    points: ["Maillage fermé et étanche", "Dimensions en millimètres", "Prêt pour tout trancheur"],
   },
 ];
 
@@ -38,11 +38,11 @@ export function Formats() {
         <Reveal>
           <p className="eyebrow">Exports</p>
           <h2 id="formats-title" className="heading-section mt-5">
-            One model, <span className="serif-accent">four</span> ways out.
+            Un modèle, <span className="serif-accent">quatre</span> sorties.
           </h2>
           <p className="text-lead mt-6 max-w-[40ch]">
-            The same solid you see in the viewport is what you get, whether it ends up on a
-            website, in a 3D scene or on a print bed.
+            Ce que vous voyez à l’écran est exactement ce que vous obtenez, que l’objet finisse sur
+            un site web, dans une scène 3D ou sur un plateau d’impression.
           </p>
         </Reveal>
         <div className="grid grid-cols-2 gap-3 max-fold:grid-cols-1">
