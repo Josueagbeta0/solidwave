@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   AccumulativeShadows,
   ContactShadows,
@@ -51,7 +52,7 @@ const videoSizes: Record<VideoAspect, [number, number]> = {
 };
 
 const viewDirections: Record<CameraView, THREE.Vector3> = {
-  angle: new THREE.Vector3(0.62, 0.3, 1).normalize(),
+  angle: new THREE.Vector3(0.62, 0.36, 1).normalize(),
   front: new THREE.Vector3(0, 0, 1),
   side: new THREE.Vector3(1, 0.04, 0.06).normalize(),
   top: new THREE.Vector3(0, 1, 0.001).normalize(),
@@ -135,6 +136,23 @@ function Exposure({ exposure }: { exposure: number }) {
   useEffect(() => {
     scene.environmentIntensity = exposure;
   }, [scene, exposure]);
+  return null;
+}
+
+/**
+ * Binds the scene environment directly to the object's material. three only
+ * honours a material's envMapIntensity when its envMap is set; through
+ * scene.environment every finish would reflect at the same strength.
+ */
+function EnvBinding({ material, exposure }: { material: THREE.MeshPhysicalMaterial; exposure: number }) {
+  useFrame(({ scene }) => {
+    const env = scene.environment;
+    if (material.envMap !== env) {
+      material.envMap = env;
+      material.needsUpdate = true;
+    }
+    material.envMapIntensity = ((material.userData.envBase as number | undefined) ?? 1) * exposure;
+  });
   return null;
 }
 
@@ -463,6 +481,26 @@ function FrontSweep({ color, intensity }: { color: string; intensity: number }) 
   );
 }
 
+/**
+ * Procedural photo studio (three's RoomEnvironment): a light grey room with
+ * soft box lights. Reflections read as smooth light-to-grey falloffs, the
+ * calm "packshot" look, instead of the high-contrast patches of a real HDRI.
+ */
+function RoomDome({ intensity, rotation }: { intensity: number; rotation: number }) {
+  const room = useMemo(() => new RoomEnvironment(), []);
+  useEffect(() => () => room.dispose(), [room]);
+  useEffect(() => {
+    room.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      const material = mesh.material as THREE.MeshBasicMaterial | THREE.MeshStandardMaterial | undefined;
+      if (!material || !("color" in material)) return;
+      material.userData.baseColor ??= material.color.clone();
+      material.color.copy(material.userData.baseColor as THREE.Color).multiplyScalar(intensity);
+    });
+  }, [room, intensity]);
+  return <primitive object={room} rotation={[0, rotation, 0]} />;
+}
+
 type RigEnvironmentProps = {
   rig: LightRigDef;
   resolution: number;
@@ -481,7 +519,9 @@ function RigEnvironmentContent({ rig, resolution, angle, power, hdr }: RigEnviro
   return (
     <Environment key={`${rig.id}-${angle}-${power}-${resolution}-${hdr ? "hdr" : "sky"}`} resolution={resolution} frames={1}>
       <color attach="background" args={[rig.ambientColor]} />
-      {hdr && rig.hdri ? (
+      {rig.room ? (
+        <RoomDome intensity={rig.room.intensity} rotation={rig.room.rotation + rad} />
+      ) : hdr && rig.hdri ? (
         <HdriDome texture={hdr} intensity={rig.hdri.intensity} rotation={rig.hdri.rotation + rad} />
       ) : (
         <SkyDome sky={rig.sky} />
@@ -492,7 +532,9 @@ function RigEnvironmentContent({ rig, resolution, angle, power, hdr }: RigEnviro
           <Lightformer
             key={index}
             form={panel.form}
-            intensity={panel.intensity * power * (hdr ? (rig.hdri?.panelScale ?? 1) : 1)}
+            intensity={
+              panel.intensity * power * (rig.room ? rig.room.panelScale : hdr ? (rig.hdri?.panelScale ?? 1) : 1)
+            }
             position={panel.position}
             rotation={panel.rotation ?? [0, 0, 0]}
             scale={panel.scale}
@@ -516,7 +558,7 @@ function RigEnvironmentWithHdr(props: RigEnvironmentProps) {
  */
 export function RigEnvironment(props: RigEnvironmentProps) {
   const fallback = <RigEnvironmentContent {...props} hdr={null} />;
-  if (!props.rig.hdri) return fallback;
+  if (!props.rig.hdri || props.rig.room) return fallback;
   return (
     <Suspense fallback={fallback}>
       <RigEnvironmentWithHdr {...props} />
@@ -1113,6 +1155,7 @@ export function IconCanvas({
       />
       <RendererSettings toneMap={settings.toneMap} post={budget.post} />
       <Exposure exposure={settings.exposure} />
+      <EnvBinding material={threeMaterial} exposure={settings.exposure} />
       <CameraRig view={settings.view} lens={settings.lens} icon={icon} fitTick={fitTick} />
       <LightRig settings={settings} resolution={budget.env} />
       <StageBackdrop paint={paintStage} paintKey={stageKey} handleRef={stageRef} />

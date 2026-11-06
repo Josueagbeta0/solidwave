@@ -15,23 +15,30 @@ const hex = (color: THREE.Color) => `#${color.getHexString(THREE.SRGBColorSpace)
  * A backdrop that flatters a finish and keeps it readable, balancing light and
  * dark stages:
  * - silver metals (chrome, brushed, titanium) → white studio; their reflections carry the contrast;
- * - clear, colourless glass → cool grey sweep: glass shows what is behind it, so a dark
- *   stage turns it into a dark plate, and pure white makes it vanish;
- * - light or luminous objects (clear/frosted glass, white ceramic, gold, pale tinted glass)
+ * - clear glass and white matte finishes → cool grey sweep: glass shows what is behind it,
+ *   so a dark stage turns it into a dark plate, white turns it invisible, and white
+ *   ceramic glows on black;
+ * - light, coloured objects (gold, champagne, pale tinted glass)
  *   → a dark stage tinted with their hue, where highlights and refraction glow;
  * - dark or deep objects (black, obsidian, cobalt, copper, bronze)
  *   → a light stage: a pastel of their hue, or white for neutral blacks.
  */
 export function autoBackdrop(color: string, metalness = 0, transmission = 0): Backdrop {
   const hsl = { h: 0, s: 0, l: 0 };
-  new THREE.Color(color).getHSL(hsl, THREE.SRGBColorSpace);
-  const neutral = hsl.s < 0.14;
+  const c = new THREE.Color(color);
+  c.getHSL(hsl, THREE.SRGBColorSpace);
+  const [r, g, b] = c.clone().convertLinearToSRGB().toArray();
+  // Chroma, not HSL saturation: near-white tints like #f7f8fa have a high
+  // saturation but no visible colour.
+  const neutral = Math.max(r, g, b) - Math.min(r, g, b) < 0.06;
   const light = hsl.l > 0.58;
 
   if (neutral) {
     if (metalness > 0.5 && hsl.l > 0.45) return WHITE_STUDIO;
-    if (transmission > 0.6 && light) return GLASS_STUDIO;
-    return light ? DARK_STUDIO : WHITE_STUDIO;
+    // Clear glass and white matte objects (frosted, milk, ceramic) read best on a
+    // cool grey: a dark stage makes white glow, pure white makes glass vanish.
+    if (light && (transmission > 0.6 || metalness < 0.5)) return GLASS_STUDIO;
+    return WHITE_STUDIO;
   }
 
   const saturation = Math.min(hsl.s, 0.75);

@@ -718,6 +718,7 @@ export function Studio() {
               key={look.id}
               type="button"
               aria-pressed={active}
+              title={look.blurb}
               onClick={() => applyLook(look)}
               className={`focus-ring group flex flex-col rounded-[14px] p-1.5 text-left transition-[background-color,box-shadow] duration-200 [--ring-offset:1px] ${
                 active
@@ -727,24 +728,18 @@ export function Studio() {
             >
               <span
                 aria-hidden="true"
-                className="relative grid h-[76px] place-items-center overflow-hidden rounded-[9px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)]"
+                className="relative grid h-[64px] place-items-center overflow-hidden rounded-[9px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)]"
                 style={{ background: look.preview }}
               >
                 <span className="transition-transform duration-500 ease-spring group-hover:-translate-y-0.5 group-hover:scale-110">
                   <Sphere finish={finishById(look.finish)} size={34} />
                 </span>
               </span>
-              <span className="mt-2 px-1 text-[12.5px] font-semibold text-ink">{look.name}</span>
-              <span className="mb-1 mt-0.5 px-1 text-[11px] leading-[1.35] text-ink-4 [text-wrap:pretty]">
-                {look.blurb}
-              </span>
+              <span className="mb-0.5 mt-2 px-1 text-[12.5px] font-medium text-ink">{look.name}</span>
             </button>
           );
         })}
       </div>
-      <p className="mt-3 text-[11.5px] leading-[1.45] text-ink-4 [text-wrap:pretty]">
-        Une ambiance est un point de départ : chaque réglage reste modifiable dans les autres onglets.
-      </p>
     </PanelSection>
   );
 
@@ -766,10 +761,10 @@ export function Studio() {
           ).map(([value, label]) => ({
             value,
             label,
+            title: modeCopy[value],
             preview: <ModeGlyph mode={value} />,
           }))}
         />
-        <p className="mt-3 text-[12px] leading-[1.5] text-ink-3">{modeCopy[mode]}</p>
       </PanelSection>
 
       <PanelSection title="Dimensions" hint="La hauteur suit le contour" onReset={resetDims}>
@@ -838,6 +833,8 @@ export function Studio() {
 
       <PanelSection
         title="Contour"
+        collapsible
+        defaultOpen={false}
         hint={
           trace
             ? `${trace.shapeCount} forme${trace.shapeCount === 1 ? "" : "s"} · ${trace.source === "vector" ? "vectoriel" : "image"}`
@@ -956,7 +953,7 @@ export function Studio() {
       </PanelSection>
 
       {(finishGroup === "glass" || finishGroup === "liquid") && (
-        <PanelSection title="Optique">
+        <PanelSection title="Optique" collapsible defaultOpen={false}>
           <Slider
             label="Réfraction"
             value={material.ior}
@@ -1009,7 +1006,7 @@ export function Studio() {
         </PanelSection>
       )}
 
-      <PanelSection title="Couleur">
+      <PanelSection title="Couleur" collapsible defaultOpen={false}>
         <ColorField
           label={finishGroup === "metal" || finishGroup === "color" ? "Couleur de base" : "Teinte"}
           value={material.tint}
@@ -1034,7 +1031,7 @@ export function Studio() {
         )}
       </PanelSection>
 
-      <PanelSection title="Surface">
+      <PanelSection title="Surface" collapsible defaultOpen={false}>
         {(finishGroup === "metal" || finishGroup === "color") && (
           <>
             <Slider
@@ -1100,7 +1097,10 @@ export function Studio() {
             ),
           }))}
         />
-        <div className="mt-3">
+      </PanelSection>
+
+      <PanelSection title="Réglages de la lumière" collapsible defaultOpen={false}>
+        <div>
           <Slider
             label="Rotation des lumières"
             value={lightAngle}
@@ -1134,15 +1134,13 @@ export function Studio() {
       </PanelSection>
 
       <PanelSection title="Fond">
-        <div className="mb-3 flex items-start justify-between gap-3 rounded-[12px] bg-accent-soft px-3 py-2.5">
-          <div className="min-w-0">
-            <p className="text-[12.5px] font-medium text-ink">Fond automatique</p>
-            <p className="mt-0.5 text-[11.5px] leading-[1.4] text-ink-3 [text-wrap:pretty]">
-              S’accorde à la couleur de la finition : teinte pastel pour les couleurs, blanc studio
-              pour le chrome, le verre clair et le noir.
-            </p>
-          </div>
-          <Switch label="Fond automatique" checked={autoStage} onChange={setAutoStage} />
+        <div className="-mt-1 mb-2">
+          <ToggleRow
+            label="Fond automatique"
+            description="S’accorde à la finition : blanc pour les métaux, gris clair pour le verre et les blancs, fond teinté pour les couleurs."
+            checked={autoStage}
+            onChange={setAutoStage}
+          />
         </div>
         <div className="grid grid-cols-7 gap-1.5">
           {backgroundPresets.map((preset) => (
@@ -1169,7 +1167,10 @@ export function Studio() {
             />
           ))}
         </div>
-        <div className="mt-3">
+      </PanelSection>
+
+      <PanelSection title="Réglages du fond" collapsible defaultOpen={false}>
+        <div>
           <Segmented
             ariaLabel="Dégradé du fond"
             value={backgroundMode}
@@ -1235,15 +1236,6 @@ export function Studio() {
             { value: "reflect", label: "Miroir" },
           ]}
         />
-        <p className="mt-2 text-[11.5px] leading-[1.45] text-ink-4 [text-wrap:pretty]">
-          {floor === "soft"
-            ? "Ombre douce d’une grande boîte à lumière au-dessus. Suit la rotation des lumières."
-            : floor === "reflect"
-              ? "Miroir flou qui se fond dans le décor."
-              : floor === "shadow"
-                ? "Ombre de contact serrée, juste sous l’objet."
-                : "L’objet flotte, sans sol."}
-        </p>
         {floor !== "none" && (
           <div className="mt-3">
             <Slider
@@ -1271,13 +1263,9 @@ export function Studio() {
           onChange={setQuality}
           options={qualityOptions}
         />
-        <p className="mt-3 text-[11.5px] leading-[1.45] text-ink-4">
-          Ultra double la précision des courbes et des biseaux, avec une densité de pixels plus élevée. À
-          utiliser pour les gros plans et les rendus finaux.
-        </p>
       </PanelSection>
 
-      <PanelSection title="Image">
+      <PanelSection title="Image" collapsible defaultOpen={false}>
         <p className="mb-2 text-[12px] text-ink-3">Rendu des tons</p>
         <Segmented
           ariaLabel="Rendu des tons"
@@ -1325,7 +1313,7 @@ export function Studio() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Caméra">
+      <PanelSection title="Caméra" collapsible defaultOpen={false}>
         <Slider
           label="Champ de vision"
           value={lens}

@@ -74,7 +74,7 @@ export const finishes: Finish[] = [
     ior: 1.5,
     attenuationColor: "#f1f3f6",
     attenuationDistance: 120,
-    envMapIntensity: 1,
+    envMapIntensity: 0.6,
     swatch: glassSphere("#f7f8fa", "#d6dbe2"),
   },
   {
@@ -89,7 +89,7 @@ export const finishes: Finish[] = [
     ior: 1.46,
     attenuationColor: "#f6efe3",
     attenuationDistance: 40,
-    envMapIntensity: 0.9,
+    envMapIntensity: 0.55,
     swatch: glassSphere("#fbfaf6", "#e6dccb", "rgba(255,252,245,.95)"),
   },
   {
@@ -316,7 +316,7 @@ export const finishes: Finish[] = [
     group: "metal",
     color: "#ffffff",
     metalness: 1,
-    roughness: 0.05,
+    roughness: 0.09,
     envMapIntensity: 1.7,
     swatch: "radial-gradient(circle at 32% 24%, #fff 0, rgba(255,255,255,.6) 9%, rgba(255,255,255,0) 34%), radial-gradient(circle at 70% 80%, rgba(0,0,0,.4) 0, rgba(0,0,0,0) 48%), linear-gradient(135deg, #ffffff, #b8bcc4 50%, #5d6169)",
   },
@@ -364,9 +364,9 @@ export const finishes: Finish[] = [
     id: "black-metal",
     name: "Noir",
     group: "metal",
-    color: "#1b1c20",
+    color: "#5d5d60",
     metalness: 1,
-    roughness: 0.12,
+    roughness: 0.2,
     envMapIntensity: 1.3,
     swatch: sphere("#5c5f66", "#202126", "#070708"),
   },
@@ -408,7 +408,7 @@ export const finishes: Finish[] = [
     metalness: 0.05,
     roughness: 0.34,
     clearcoat: 0.7,
-    envMapIntensity: 1,
+    envMapIntensity: 0.5,
     swatch: sphere("#ffffff", "#f3f2ee", "#c3c2bd"),
   },
 
@@ -482,6 +482,11 @@ export function createMaterial(
     // Back faces only matter when light passes through the object.
     side: transmission > 0 ? THREE.DoubleSide : THREE.FrontSide,
   });
+
+  // Per-finish reflection strength. three ignores envMapIntensity for materials
+  // lit by scene.environment, so the canvas binds the environment to the
+  // material and applies this (times exposure) itself — see EnvBinding.
+  material.userData.envBase = finish.envMapIntensity ?? 1.2;
 
   if (overrides.reliefMap) {
     material.map = overrides.reliefMap;

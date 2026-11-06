@@ -32,6 +32,8 @@ export type LightRig = {
    * `panelScale` dims the synthetic panels so they complement rather than swamp it.
    */
   hdri?: { intensity: number; rotation: number; panelScale: number };
+  /** Procedural light-grey studio room (replaces the HDRI and gradient when set). */
+  room?: { intensity: number; rotation: number; panelScale: number };
   /**
    * Soft radial sweep in front of the object, low and to the left, where flat
    * front faces reflect from the default 3/4 view. Without it those faces
@@ -55,10 +57,11 @@ export const lightRigs: LightRig[] = [
     ambientColor: "#07090f",
     sky: { top: "#d7deec", horizon: "#5b6478", bottom: "#0b0d13", intensity: 1 },
     hdri: { intensity: 0.4, rotation: Math.PI * 0.75, panelScale: 0.8 },
-    front: { intensity: 0.55, color: "#eef2fa" },
+    room: { intensity: 0.85, rotation: 0, panelScale: 0.6 },
+    front: { intensity: 1, color: "#f4f6fb" },
     ambient: 0.35,
-    key: { position: [8, 12, 10], intensity: 1.6, color: "#fff8ef" },
-    fill: { position: [-10, -4, 6], intensity: 0.5, color: "#dce6ff" },
+    key: { position: [8, 12, 10], intensity: 0.9, color: "#fff8ef" },
+    fill: { position: [-10, -4, 6], intensity: 0.25, color: "#dce6ff" },
     // A big soft top box for body, then thin hard strips that draw crisp
     // highlight lines along bevels — the "product shot" look.
     panels: [
@@ -107,7 +110,7 @@ export const lightRigs: LightRig[] = [
   },
   {
     id: "softbox",
-    name: "Boîte à lumière",
+    name: "Diffuse",
     swatch: "linear-gradient(180deg,#ffffff 0%,#dfe4ee 60%,#b9c1d1 100%)",
     ambientColor: "#1a1d26",
     sky: { top: "#ffffff", horizon: "#9aa3b5", bottom: "#2a2e38", intensity: 1 },
