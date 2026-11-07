@@ -96,3 +96,71 @@ export function createArtworkTexture(
   texture.needsUpdate = true;
   return texture;
 }
+
+/**
+ * Whether an artwork is genuinely multicoloured, so « Couleurs du logo » can
+ * switch on by itself. Background (the border's median colour) is ignored;
+ * the remaining pixels are binned by colour. A logo counts as multicoloured
+ * when at least two colours each cover a real share of it and one of them is
+ * chromatic: a single-colour mark (any hue) or a black-and-white logo keeps
+ * the finish's own look.
+ */
+export async function isMulticolor(url: string): Promise<boolean> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Unable to load image"));
+    img.src = url;
+  });
+  const size = 96;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+  ctx.drawImage(image, 0, 0, size, size);
+  const data = ctx.getImageData(0, 0, size, size).data;
+
+  const border: number[] = [];
+  for (let i = 0; i < size; i++) border.push(i, (size - 1) * size + i, i * size, i * size + size - 1);
+  const median = (channel: number) => {
+    const values = border.map((index) => data[index * 4 + channel]).sort((a, b) => a - b);
+    return values[values.length >> 1];
+  };
+  const transparentBorder = border.filter((index) => data[index * 4 + 3] < 128).length > border.length / 2;
+  const bg = [median(0), median(1), median(2)];
+
+  // Hue buckets (30° each) for coloured pixels, one bucket for neutrals
+  // (black, white, grey). Anti-aliased edges of a one-colour mark keep its hue,
+  // so they never pass for a second colour.
+  const hues = new Array<number>(12).fill(0);
+  let neutral = 0;
+  let foreground = 0;
+  for (let i = 0; i < size * size; i++) {
+    const r = data[i * 4];
+    const g = data[i * 4 + 1];
+    const b = data[i * 4 + 2];
+    if (data[i * 4 + 3] < 128) continue;
+    if (!transparentBorder && Math.hypot(r - bg[0], g - bg[1], b - bg[2]) < 60) continue;
+    foreground++;
+    const max = Math.max(r, g, b);
+    const chroma = max - Math.min(r, g, b);
+    if (chroma < 45) {
+      neutral++;
+      continue;
+    }
+    let hue: number;
+    if (max === r) hue = ((g - b) / chroma + 6) % 6;
+    else if (max === g) hue = (b - r) / chroma + 2;
+    else hue = (r - g) / chroma + 4;
+    hues[Math.floor(hue * 2) % 12]++;
+  }
+  if (foreground < 20) return false;
+  const share = (count: number) => count / foreground > 0.012;
+  const present = hues.map((count, index) => (share(count) ? index : -1)).filter((index) => index >= 0);
+  // Two hues at least 60° apart (neighbouring buckets can be one colour split
+  // in two), or any hue alongside black / white / grey.
+  const distinctHues = present.some((a) => present.some((b) => Math.min(Math.abs(a - b), 12 - Math.abs(a - b)) >= 2));
+  return distinctHues || (present.length > 0 && share(neutral));
+}

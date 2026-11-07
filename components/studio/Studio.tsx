@@ -47,6 +47,7 @@ import {
 } from "@/lib/studio/materials";
 import { lightRigs } from "@/lib/studio/lighting";
 import { autoBackdrop, luminance, mixHex } from "@/lib/studio/backdrop";
+import { isMulticolor } from "@/lib/studio/artwork";
 import { looks, type Look } from "@/lib/studio/looks";
 import {
   buildIcon,
@@ -315,6 +316,8 @@ export function Studio() {
   const actionsRef: ActionsRef = useRef(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<Source | null>(null);
+  // Latest colour check, so a slow one never overrides a newer import.
+  const colourCheck = useRef(0);
   const iconRef = useRef<BuiltIcon | null>(null);
   const initialised = useRef(false);
   const toastTimer = useRef<number | null>(null);
@@ -477,6 +480,16 @@ export function Studio() {
       setFileName(name);
       setFileUrl(url);
       updateDimsFromTrace(result);
+      // Multicoloured logos show their own colours straight away; one-colour
+      // and black-and-white marks keep the finish's look.
+      const check = ++colourCheck.current;
+      isMulticolor(url)
+        .then((multi) => {
+          if (colourCheck.current === check) setLogoColors(multi);
+        })
+        .catch(() => {
+          if (colourCheck.current === check) setLogoColors(false);
+        });
     },
     [updateDimsFromTrace],
   );
@@ -1461,7 +1474,7 @@ export function Studio() {
           className="focus-ring group flex items-center gap-2 rounded-[10px] pr-1 [--ring-offset:4px]"
         >
           <LogoMark size={26} gradient className="transition-transform duration-500 ease-spring group-hover:-rotate-6" />
-          <span className="text-[15px] font-semibold tracking-[-0.04em] max-phone:hidden">SolidWave</span>
+          <span className="text-[15px] font-semibold tracking-[-0.04em]">SolidWave</span>
         </Link>
         <span className="mx-1.5 h-5 w-px bg-hairline-strong max-fold:hidden" />
 
@@ -1874,6 +1887,31 @@ export function Studio() {
                     <span key={quality} className="animate-pop">
                       {quality === "draft" ? "SD" : quality === "high" ? "HD" : "4K"}
                     </span>
+                  </button>
+                </Tip>
+                <Tip label={logoColors ? "Couleurs du logo : activées" : "Couleurs du logo"}>
+                  <button
+                    type="button"
+                    aria-label="Couleurs du logo"
+                    aria-pressed={logoColors}
+                    onClick={() => setLogoColors((value) => !value)}
+                    className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${
+                      logoColors ? overlayActive : overlayButton
+                    }`}
+                  >
+                    {/* The logo itself, in colour when the option is on. */}
+                    {fileUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fileUrl}
+                        alt=""
+                        className={`size-[18px] object-contain transition-[filter,opacity,scale] duration-300 ease-spring ${
+                          logoColors ? "scale-110" : "opacity-60 grayscale"
+                        }`}
+                      />
+                    ) : (
+                      <Palette size={15} strokeWidth={1.8} />
+                    )}
                   </button>
                 </Tip>
               </div>
