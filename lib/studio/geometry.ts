@@ -216,6 +216,27 @@ function extrude(
   return finished;
 }
 
+/**
+ * Splits shapes by the bevel they can carry. One edge radius for everything
+ * swallowed small parts (a line of fine type under a big wordmark turned
+ * into rounded blobs): each shape's bevel is capped to ~30 % of its smallest
+ * side, then bucketed so a logo still extrudes in a handful of meshes.
+ */
+function bevelGroups(shapes: THREE.Shape[], edge: number): Map<number, THREE.Shape[]> {
+  const groups = new Map<number, THREE.Shape[]>();
+  const step = Math.max(edge / 6, 0.02);
+  for (const shape of shapes) {
+    const box = new THREE.Box2().setFromPoints(shape.getPoints(8));
+    const size = box.getSize(new THREE.Vector2());
+    const cap = Math.min(edge, Math.min(size.x, size.y) * 0.3);
+    const bevel = edge <= 0 ? 0 : Math.max(step, Math.round(cap / step) * step);
+    const list = groups.get(bevel) ?? [];
+    list.push(shape);
+    groups.set(bevel, list);
+  }
+  return groups;
+}
+
 export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon {
   const profile = qualityProfile[options.quality ?? "high"];
   const chamfer = options.edgeProfile === "chamfer";
@@ -285,11 +306,13 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
     const geometry = extrude(shapes, body, Math.max(size, bevel), Math.max(2, Math.round(10 * profile.bevel)), true);
     add(geometry);
   } else if (options.mode === "relief") {
-    const geometry = extrude(shapes, depth * 0.55, Math.min(edge, depth * 0.28), seg(3));
-    add(geometry);
+    for (const [bevel, group] of bevelGroups(shapes, Math.min(edge, depth * 0.28))) {
+      add(extrude(group, depth * 0.55, bevel, seg(3)));
+    }
   } else {
-    const geometry = extrude(shapes, depth, edge, seg(5));
-    add(geometry);
+    for (const [bevel, group] of bevelGroups(shapes, edge)) {
+      add(extrude(group, depth, bevel, seg(5)));
+    }
   }
 
   group.updateMatrixWorld(true);

@@ -460,55 +460,63 @@ function traceField(
   // Sort big first so containment tests meet parents before children.
   contours.sort((a, b) => b.area - a.area);
 
-  const depth = new Array(contours.length).fill(0);
-  for (let i = 0; i < contours.length; i++) {
-    for (let j = i + 1; j < contours.length; j++) {
-      if (contours[j].box.containsPoint(new THREE.Vector2(...contours[i].points[0]))) {
-        if (pointInPolygon(contours[i].points[0], contours[j].points)) depth[i]++;
+  // Nesting: each contour's parent is the smallest bigger contour around it.
+  // (Contours are sorted big first, so parents always come earlier.)
+  const count = contours.length;
+  const parent = new Array<number>(count).fill(-1);
+  const depth = new Array<number>(count).fill(0);
+  const hasChildren = new Array<boolean>(count).fill(false);
+  for (let i = 0; i < count; i++) {
+    const probe = contours[i].points[0];
+    for (let j = i - 1; j >= 0; j--) {
+      if (contours[j].area <= contours[i].area) continue;
+      if (contours[j].box.containsPoint(new THREE.Vector2(...probe)) && pointInPolygon(probe, contours[j].points)) {
+        parent[i] = j;
+        break;
       }
     }
+    if (parent[i] !== -1) {
+      depth[i] = depth[parent[i]] + 1;
+      hasChildren[parent[i]] = true;
+    }
+  }
+
+  // Odd depth = a hole. An empty hole (the inside of a "d", a ring) stays a
+  // hole. A hole that holds other parts (the inside of a badge, with the
+  // lettering on it) becomes solid: otherwise those parts would float free.
+  // Everything inside a filled area is then dropped, so nothing overlaps.
+  const isHole = (index: number) => depth[index] % 2 === 1;
+  const fills = (index: number) => isHole(index) && (options.fillHoles || hasChildren[index]);
+  const dropped = new Array<boolean>(count).fill(false);
+  for (let i = 0; i < count; i++) {
+    const up = parent[i];
+    if (up !== -1 && (dropped[up] || fills(up))) dropped[i] = true;
   }
 
   const cx = width / 2;
   const cy = height / 2;
   let pointsTotal = 0;
   const shapes: THREE.Shape[] = [];
-  const outerIndices: number[] = [];
+  const shapeOf = new Map<number, THREE.Shape>();
 
   const toVector = (points: Point[]) =>
     points.map(([x, y]) => new THREE.Vector2(x - cx, cy - y));
 
   contours.forEach((contour, index) => {
-    if (depth[index] % 2 !== 0) return;
+    if (dropped[index] || isHole(index)) return;
     const shape = new THREE.Shape(toVector(contour.points));
-    outerIndices.push(index);
+    shapeOf.set(index, shape);
     pointsTotal += contour.points.length;
     shapes.push(shape);
   });
 
-  if (!options.fillHoles) {
-    contours.forEach((contour, index) => {
-      if (depth[index] % 2 === 0) return;
-      // Find the smallest enclosing outer contour.
-      let parent = -1;
-      let parentArea = Infinity;
-      for (let j = 0; j < contours.length; j++) {
-        if (depth[j] % 2 !== 0 || j === index) continue;
-        if (contours[j].area < parentArea &&
-            contours[j].box.containsPoint(new THREE.Vector2(...contour.points[0])) &&
-            pointInPolygon(contour.points[0], contours[j].points)) {
-          parent = j;
-          parentArea = contours[j].area;
-        }
-      }
-      if (parent === -1) return;
-      const shapeIndex = outerIndices.indexOf(parent);
-      if (shapeIndex === -1) return;
-      const path = new THREE.Path(toVector(contour.points));
-      shapes[shapeIndex].holes.push(path);
-      pointsTotal += contour.points.length;
-    });
-  }
+  contours.forEach((contour, index) => {
+    if (dropped[index] || !isHole(index) || fills(index)) return;
+    const owner = shapeOf.get(parent[index]);
+    if (!owner) return;
+    owner.holes.push(new THREE.Path(toVector(contour.points)));
+    pointsTotal += contour.points.length;
+  });
 
   const shapeBounds = new THREE.Box2();
   for (const shape of shapes) {
@@ -558,11 +566,12 @@ export function traceImageSource(
   if (resolved === "color") {
     // Close thin background-coloured slits (inner line art, small type, letters
     // almost touching) so the object keeps the logo's silhouette; the artwork
-    // texture still paints those lines. Then pull the edge in by one pixel to
-    // drop the anti-aliased / JPEG-ringing rim of background colour.
+    // texture still paints those lines. (The anti-aliased rim of background
+    // colour is handled by the texture, which is clipped to the inset outline;
+    // eroding here broke thin strokes such as small spaced type.)
     const radius = Math.max(1, Math.round(Math.max(width, height) * 0.004));
     morph(field, width, height, radius, Math.max);
-    morph(field, width, height, radius + 1, Math.min);
+    morph(field, width, height, radius, Math.min);
   }
   gaussian(field, width, height);
   return traceField(field, width, height, options);
