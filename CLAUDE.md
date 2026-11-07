@@ -27,7 +27,7 @@ npm run typecheck  # tsc --noEmit (TypeScript 7)
 
 **The whole UI and copy are in French** (`<html lang="fr">`, decimal commas in readouts). Write new user-facing text in French.
 
-**SolidWave** — a marketing landing page (`/`) plus an in-browser 3D studio (`/studio`) that turns an SVG/PNG logo into a true-to-size 3D object with glass/metal/colour finishes, renders PNGs up to 4K and exports GLB/STL. Everything runs client-side; there is no backend/API. Brand constants (name, tagline, site URL via `NEXT_PUBLIC_SITE_URL`) live in `lib/site.ts`. All artwork (logo in `components/LogoMark.tsx`, starter shapes in `lib/samples.ts`) is original — don't add third-party logos.
+**SolidWave** — a marketing landing page (`/`) plus an in-browser 3D studio (`/studio`) that turns an SVG/PNG logo into a true-to-size 3D object with glass/metal/colour finishes, renders PNGs up to 4K and exports GLB/STL. Everything runs client-side; there is no backend/API. Brand constants (name, tagline, site URL via `NEXT_PUBLIC_SITE_URL`, public `repo`, `author` name and portfolio URL) live in `lib/site.ts`. The project is public on GitHub under the MIT licence; the author credit « Créé par Josué Agbeta » (linking to `site.author.url`) must stay visible on the landing hero, the open-source section and the footer. The landing « Comment ça marche » is `components/landing/HowItWorks.tsx`: five SVG/CSS-animated pipeline steps (keyframes `how-*` in `globals.css`) that auto-advance only while in view and never under reduced motion. All artwork (logo in `components/LogoMark.tsx`, starter shapes in `lib/samples.ts`) is original — don't add third-party logos.
 
 ## Architecture
 

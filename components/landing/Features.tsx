@@ -152,6 +152,31 @@ export function Features() {
           </div>
         </Tile>
 
+        {/* Millimetres */}
+        <Tile
+          delay={140}
+          className="col-span-2 max-fold:col-span-1"
+          title="De vrais millimètres"
+          body="Largeur, hauteur et profondeur sont réelles, et conservées dans les fichiers STL et GLB."
+        >
+          <div className="flex h-full min-h-[140px] flex-col justify-center">
+            <div className="flex h-10 items-end justify-between border-b border-ink/70">
+              {Array.from({ length: 21 }, (_, index) => (
+                <span
+                  key={index}
+                  className="w-px bg-ink/70"
+                  style={{ height: index % 10 === 0 ? 28 : index % 5 === 0 ? 18 : 10 }}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex justify-between font-mono text-[11px] text-ink-4">
+              <span>0</span>
+              <span>50</span>
+              <span>100 mm</span>
+            </div>
+          </div>
+        </Tile>
+
         {/* Logo colours */}
         <Tile
           delay={60}
@@ -202,31 +227,6 @@ export function Features() {
               ))}
               <path d={LOGO_PATHS[0]} fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="0.8" />
             </svg>
-          </div>
-        </Tile>
-
-        {/* Millimetres */}
-        <Tile
-          delay={140}
-          className="col-span-2 max-fold:col-span-1"
-          title="De vrais millimètres"
-          body="Largeur, hauteur et profondeur sont réelles, et conservées dans les fichiers STL et GLB."
-        >
-          <div className="flex h-full min-h-[140px] flex-col justify-center">
-            <div className="flex h-10 items-end justify-between border-b border-ink/70">
-              {Array.from({ length: 21 }, (_, index) => (
-                <span
-                  key={index}
-                  className="w-px bg-ink/70"
-                  style={{ height: index % 10 === 0 ? 28 : index % 5 === 0 ? 18 : 10 }}
-                />
-              ))}
-            </div>
-            <div className="mt-2 flex justify-between font-mono text-[11px] text-ink-4">
-              <span>0</span>
-              <span>50</span>
-              <span>100 mm</span>
-            </div>
           </div>
         </Tile>
       </div>
