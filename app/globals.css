@@ -299,6 +299,86 @@
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Studio motion                                                       */
+/* ------------------------------------------------------------------ */
+
+/* Inspector content: sections settle in one after another on tab change. */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stagger > * {
+  animation: panel-in 0.42s var(--ease-out) both;
+}
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(n + 6) { animation-delay: 200ms; }
+
+/* Popovers and menus grow from their anchor. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-pop {
+  animation: pop-in 0.22s var(--ease-out) both;
+}
+
+/* Floating stage controls fade up once an object is loaded. */
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-float-in {
+  animation: float-in 0.5s var(--ease-out) both;
+}
+
+/* Collapsible block: animates its height with grid rows (no measuring). */
+.fold {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.32s var(--ease-out),
+    opacity 0.22s ease;
+}
+.fold[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.fold > * {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.fold[data-settled="true"] > * {
+  overflow: visible;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

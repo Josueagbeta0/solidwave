@@ -5,22 +5,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Aperture,
   Box,
+  Check,
   ChevronDown,
   Clapperboard,
   Download,
-  Droplets,
-  Gem,
   ImagePlus,
-  Layers,
-  Lightbulb,
+  Keyboard,
   Loader2,
   Maximize2,
   Palette,
-  PanelLeftClose,
-  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   RotateCw,
   Shapes,
+  SlidersHorizontal,
   Sparkles,
+  Sun,
   Upload,
   Wand2,
 } from "lucide-react";
@@ -33,7 +33,7 @@ import {
   PanelSection,
   Segmented,
   Slider,
-  Switch,
+  Tip,
   ToggleRow,
 } from "@/components/studio/controls";
 import {
@@ -96,11 +96,11 @@ const modeCopy: Record<GeometryMode, string> = {
 };
 
 const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "look", label: "Ambiances", icon: <Sparkles size={18} strokeWidth={1.6} /> },
-  { id: "shape", label: "Forme", icon: <Shapes size={18} strokeWidth={1.6} /> },
-  { id: "material", label: "Matière", icon: <Palette size={18} strokeWidth={1.6} /> },
-  { id: "light", label: "Lumière", icon: <Lightbulb size={18} strokeWidth={1.6} /> },
-  { id: "render", label: "Rendu", icon: <Aperture size={18} strokeWidth={1.6} /> },
+  { id: "look", label: "Ambiances", icon: <Sparkles size={16} strokeWidth={1.7} /> },
+  { id: "shape", label: "Forme", icon: <Shapes size={16} strokeWidth={1.7} /> },
+  { id: "material", label: "Matière", icon: <Palette size={16} strokeWidth={1.7} /> },
+  { id: "light", label: "Scène", icon: <Sun size={16} strokeWidth={1.7} /> },
+  { id: "render", label: "Rendu", icon: <Aperture size={16} strokeWidth={1.7} /> },
 ];
 
 const dockFinishes = [
@@ -262,6 +262,7 @@ export function Studio() {
   const [exporting, setExporting] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [stats, setStats] = useState({ width: 100, height: 100, depth: 14, triangles: 0 });
 
@@ -593,6 +594,7 @@ export function Studio() {
         setPanelOpen(true);
       } else if (key === "escape") {
         setExportOpen(false);
+        setHelpOpen(false);
       }
     };
 
@@ -613,14 +615,17 @@ export function Studio() {
   }, [handleFile]);
 
   useEffect(() => {
-    if (!exportOpen) return;
+    if (!exportOpen && !helpOpen) return;
     const onClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest("[data-export-menu]")) setExportOpen(false);
+      if (!target.closest("[data-popover]")) {
+        setExportOpen(false);
+        setHelpOpen(false);
+      }
     };
     window.addEventListener("mousedown", onClick);
     return () => window.removeEventListener("mousedown", onClick);
-  }, [exportOpen]);
+  }, [exportOpen, helpOpen]);
 
   const onStats = useCallback(
     (next: { width: number; height: number; depth: number; triangles: number }) => setStats(next),
@@ -921,10 +926,10 @@ export function Studio() {
             if (first) applyFinish(first.id);
           }}
           options={[
-            { value: "glass", label: "Verre", icon: <Gem size={13} strokeWidth={1.6} /> },
-            { value: "liquid", label: "Liquide", icon: <Droplets size={13} strokeWidth={1.6} /> },
-            { value: "metal", label: "Métal", icon: <Layers size={13} strokeWidth={1.6} /> },
-            { value: "color", label: "Couleur", icon: <Palette size={13} strokeWidth={1.6} /> },
+            { value: "glass", label: "Verre" },
+            { value: "liquid", label: "Liquide" },
+            { value: "metal", label: "Métal" },
+            { value: "color", label: "Couleur" },
           ]}
         />
         <div className="mt-3 grid grid-cols-4 gap-1">
@@ -1118,7 +1123,7 @@ export function Studio() {
             min={0}
             max={4}
             step={0.05}
-            defaultValue={1.6}
+            defaultValue={1}
             onChange={setStudioLight}
           />
           <Slider
@@ -1142,7 +1147,7 @@ export function Studio() {
             onChange={setAutoStage}
           />
         </div>
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-5 gap-2">
           {backgroundPresets.map((preset) => (
             <button
               key={preset.id}
@@ -1156,7 +1161,7 @@ export function Studio() {
                 setBgCenter(preset.center);
                 setBgEdge(preset.edge);
               }}
-              className={`focus-ring aspect-square rounded-[9px] shadow-[inset_0_0_0_1px_rgba(12,10,9,.1)] transition-[outline] [--ring-offset:2px] ${
+              className={`focus-ring h-10 rounded-[10px] shadow-[inset_0_0_0_1px_rgba(12,10,9,.1)] transition-[outline,scale] duration-300 ease-spring hover:scale-[1.04] active:scale-95 [--ring-offset:2px] ${
                 !autoStage && backgroundId === preset.id
                   ? "outline-2 outline-offset-2 outline-accent"
                   : "hover:outline-1 hover:outline-offset-2 hover:outline-ink/25"
@@ -1208,7 +1213,7 @@ export function Studio() {
             min={0}
             max={1}
             step={0.01}
-            defaultValue={0.35}
+            defaultValue={0}
             onChange={setHalo}
             description="Une lueur douce derrière l’objet, teintée de sa couleur."
           />
@@ -1218,7 +1223,7 @@ export function Studio() {
             min={0}
             max={1}
             step={0.01}
-            defaultValue={0.35}
+            defaultValue={0.22}
             onChange={setVignette}
           />
         </div>
@@ -1284,7 +1289,7 @@ export function Studio() {
             min={0}
             max={1.5}
             step={0.01}
-            defaultValue={0.35}
+            defaultValue={0}
             onChange={setBloom}
             description={
               quality === "draft"
@@ -1353,20 +1358,31 @@ export function Studio() {
   /* ---------------------------------------------------------------- */
   /* Layout                                                            */
   /* ---------------------------------------------------------------- */
-  const activeTab = tabs.find((item) => item.id === tab) ?? tabs[0];
+  const activeIndex = Math.max(0, tabs.findIndex((item) => item.id === tab));
   // Overlays sit on the 3D stage: style them for whichever backdrop is behind.
   const overlay = darkStage
     ? "bg-black/45 text-white/85 shadow-[inset_0_0_0_1px_rgba(255,255,255,.08)] backdrop-blur-md"
-    : "bg-white/85 text-ink-2 shadow-raise backdrop-blur-md";
+    : "bg-white/80 text-ink-2 shadow-[0_0_0_1px_#0c0a090f,0_10px_30px_-14px_#0c0a0940] backdrop-blur-md";
   const overlayButton = darkStage
     ? "text-white/70 hover:bg-white/10 hover:text-white"
     : "text-ink-3 hover:bg-well-strong hover:text-ink";
   const overlayActive = darkStage ? "bg-white/15 text-white" : "bg-surface text-ink shadow-raise";
+  const iconButton =
+    "focus-ring press grid size-9 place-items-center rounded-[10px] text-ink-3 hover:bg-well-strong hover:text-ink [--press:.92] [--ring-offset:2px]";
+  const shortcuts: [string, string][] = [
+    ["F", "Recadrer l’objet"],
+    ["R", "Rotation automatique"],
+    ["1 – 5", "Changer d’onglet"],
+    ["Ctrl B", "Afficher ou masquer le panneau"],
+    ["Ctrl V", "Coller une image"],
+    ["Double-clic", "Réinitialiser un curseur"],
+    ["Échap", "Fermer un menu"],
+  ];
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-shell text-ink">
       {/* Top bar */}
-      <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b border-hairline bg-surface px-3 max-fold:px-2">
+      <header className="relative z-40 flex h-14 shrink-0 items-center gap-2 px-4 max-fold:border-b max-fold:border-hairline max-fold:bg-surface max-fold:px-2">
         <Link
           href="/"
           aria-label="Accueil SolidWave"
@@ -1375,51 +1391,108 @@ export function Studio() {
           <LogoMark size={26} gradient className="transition-transform duration-500 ease-spring group-hover:-rotate-6" />
           <span className="text-[15px] font-semibold tracking-[-0.04em] max-phone:hidden">SolidWave</span>
         </Link>
-        <span className="h-5 w-px bg-hairline-strong max-fold:hidden" />
+        <span className="mx-1.5 h-5 w-px bg-hairline-strong max-fold:hidden" />
 
         {/* Current file */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="focus-ring flex min-w-0 items-center gap-2.5 rounded-[10px] py-1 pl-1 pr-2.5 transition-colors duration-150 hover:bg-well-strong max-fold:hidden [--ring-offset:2px]"
-        >
-          <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-night shadow-[inset_0_0_0_1px_var(--color-hairline)]">
-            {fileUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={fileUrl} alt="" className="size-full object-contain p-1" />
-            ) : (
-              <ImagePlus size={15} strokeWidth={1.6} className="text-ink-4" />
-            )}
-          </span>
-          <span className="min-w-0 text-left">
-            <span className="block max-w-[220px] truncate text-[13px] font-medium text-ink">
-              {trace ? fileName : "Aucun fichier"}
-            </span>
-            <span className="block truncate font-mono text-[10.5px] text-ink-4">
-              {trace
-                ? `${stats.triangles.toLocaleString("fr-FR")} triangles`
-                : "SVG · PNG · JPG · WebP"}
-            </span>
-          </span>
-        </button>
-
-        <div className="ml-auto flex items-center gap-2">
+        <Tip label="Remplacer le fichier" side="bottom" className="min-w-0 max-fold:hidden">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="focus-ring flex h-9 items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium text-ink-2 transition-colors duration-150 hover:bg-well-strong hover:text-ink press [--ring-offset:2px]"
+            className="focus-ring flex min-w-0 items-center gap-2.5 rounded-[10px] py-1 pl-1 pr-2.5 transition-colors duration-150 hover:bg-well-strong [--ring-offset:2px]"
+          >
+            <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-surface shadow-raise">
+              {fileUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={fileUrl} alt="" className="size-full object-contain p-1" />
+              ) : (
+                <ImagePlus size={15} strokeWidth={1.6} className="text-ink-4" />
+              )}
+            </span>
+            <span className="min-w-0 text-left">
+              <span className="block max-w-[220px] truncate text-[13px] font-medium text-ink">
+                {trace ? fileName : "Aucun fichier"}
+              </span>
+              <span className="block truncate font-mono text-[10.5px] text-ink-4">
+                {trace ? `${stats.triangles.toLocaleString("fr-FR")} triangles` : "SVG · PNG · JPG · WebP"}
+              </span>
+            </span>
+          </button>
+        </Tip>
+
+        <div className="ml-auto flex items-center gap-1">
+          {/* Shortcuts */}
+          <div className="relative max-tab:hidden" data-popover>
+            <Tip label="Raccourcis clavier" side="bottom" disabled={helpOpen}>
+              <button
+                type="button"
+                aria-label="Raccourcis clavier"
+                aria-expanded={helpOpen}
+                onClick={() => {
+                  setHelpOpen((open) => !open);
+                  setExportOpen(false);
+                }}
+                className={`${iconButton} ${helpOpen ? "bg-well-strong text-ink" : ""}`}
+              >
+                <Keyboard size={17} strokeWidth={1.7} />
+              </button>
+            </Tip>
+            {helpOpen && (
+              <div className="animate-pop absolute right-0 top-[calc(100%+8px)] z-50 w-[280px] origin-top-right rounded-[16px] bg-surface p-2 shadow-float">
+                <p className="px-2.5 pb-1.5 pt-1 text-[12px] font-semibold text-ink">Raccourcis</p>
+                <ul>
+                  {shortcuts.map(([key, label]) => (
+                    <li
+                      key={key}
+                      className="flex items-center justify-between gap-3 rounded-[8px] px-2.5 py-1.5 text-[12.5px] text-ink-2"
+                    >
+                      {label}
+                      <kbd className={kbd}>{key}</kbd>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Panel toggle */}
+          <Tip
+            label={panelOpen ? "Masquer le panneau" : "Afficher le panneau"}
+            shortcut="Ctrl B"
+            side="bottom"
+            className="max-tab:hidden"
+          >
+            <button
+              type="button"
+              aria-label={panelOpen ? "Masquer le panneau" : "Afficher le panneau"}
+              aria-pressed={panelOpen}
+              onClick={() => setPanelOpen((open) => !open)}
+              className={`${iconButton} ${panelOpen ? "text-ink" : ""}`}
+            >
+              {panelOpen ? <PanelRightClose size={17} strokeWidth={1.7} /> : <PanelRightOpen size={17} strokeWidth={1.7} />}
+            </button>
+          </Tip>
+
+          <span className="mx-1.5 h-5 w-px bg-hairline-strong max-tab:hidden" />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="focus-ring press flex h-9 items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium text-ink-2 hover:bg-well-strong hover:text-ink [--ring-offset:2px]"
           >
             <Upload size={15} strokeWidth={1.8} />
             <span className="max-phone:hidden">Importer</span>
           </button>
 
-          <div className="relative" data-export-menu>
+          <div className="relative" data-popover>
             <button
               type="button"
               aria-expanded={exportOpen}
-              onClick={() => setExportOpen((open) => !open)}
+              onClick={() => {
+                setExportOpen((open) => !open);
+                setHelpOpen(false);
+              }}
               disabled={!icon || exporting}
-              className="focus-ring flex h-9 items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-2.5 text-[13px] font-medium text-primary-foreground press disabled:cursor-not-allowed disabled:opacity-40 [--press:.96] [--ring-offset:3px]"
+              className="focus-ring press flex h-9 items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-2.5 text-[13px] font-medium text-primary-foreground shadow-[0_6px_16px_-8px_#0c0a0999] hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 [--press:.96] [--ring-offset:3px]"
             >
               {exporting ? (
                 <Loader2 size={14} strokeWidth={2} className="animate-spin" />
@@ -1430,110 +1503,124 @@ export function Studio() {
               <ChevronDown
                 size={13}
                 strokeWidth={2}
-                className={`transition-transform duration-200 ${exportOpen ? "rotate-180" : ""}`}
+                className={`transition-transform duration-300 ease-spring ${exportOpen ? "rotate-180" : ""}`}
               />
             </button>
 
             {exportOpen && (
-              <div className="thin-scrollbar animate-rise absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-80px)] w-[340px] overflow-y-auto rounded-[16px] bg-surface p-2 shadow-float [animation-duration:.25s] max-phone:fixed max-phone:inset-x-2 max-phone:top-16 max-phone:w-auto">
-                {/* Image */}
-                <div className="rounded-[12px] p-3">
-                  <p className="flex items-center gap-2 text-[13px] font-semibold">
-                    <ImagePlus size={15} strokeWidth={1.8} className="text-accent" />
-                    Image PNG
-                  </p>
-                  <div className="mt-3">
-                    <Segmented
-                      ariaLabel="Taille du PNG"
-                      value={String(pngSize)}
-                      onChange={(next) => setPngSize(Number(next) as (typeof pngSizes)[number])}
-                      options={pngSizes.map((value) => ({
-                        value: String(value),
-                        label: value === 4096 ? "4K" : `${value / 1024}K`,
-                      }))}
-                    />
+              <div className="thin-scrollbar animate-pop absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-80px)] w-[340px] origin-top-right overflow-y-auto rounded-[18px] bg-surface p-1.5 shadow-float max-phone:fixed max-phone:inset-x-2 max-phone:top-16 max-phone:w-auto">
+                <div className="stagger">
+                  {/* Image */}
+                  <div className="rounded-[13px] p-3">
+                    <p className="flex items-center gap-2 text-[13px] font-semibold">
+                      <span className="grid size-7 place-items-center rounded-[8px] bg-accent-soft text-accent">
+                        <ImagePlus size={14} strokeWidth={1.8} />
+                      </span>
+                      Image PNG
+                    </p>
+                    <div className="mt-3">
+                      <Segmented
+                        ariaLabel="Taille du PNG"
+                        value={String(pngSize)}
+                        onChange={(next) => setPngSize(Number(next) as (typeof pngSizes)[number])}
+                        options={pngSizes.map((value) => ({
+                          value: String(value),
+                          label: value === 4096 ? "4K" : `${value / 1024}K`,
+                        }))}
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <ToggleRow
+                        label="Inclure le fond"
+                        description={
+                          pngBackground
+                            ? "Le fond, le halo et le sol miroir sont intégrés."
+                            : "Fond transparent avec ombre douce."
+                        }
+                        checked={pngBackground}
+                        onChange={setPngBackground}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => exportAs("png")}
+                      className="focus-ring press mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-accent text-[13px] font-medium text-white shadow-[0_6px_16px_-8px_#2f5bff] hover:bg-accent-strong [--ring-offset:2px]"
+                    >
+                      Générer le PNG · {pngSize} px
+                    </button>
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="text-[12.5px] text-ink-2">Inclure le fond</span>
-                    <Switch label="Inclure le fond" checked={pngBackground} onChange={setPngBackground} />
+
+                  <div className="mx-3 h-px bg-hairline" />
+
+                  {/* Video */}
+                  <div className="rounded-[13px] p-3">
+                    <p className="flex items-center gap-2 text-[13px] font-semibold">
+                      <span className="grid size-7 place-items-center rounded-[8px] bg-accent-soft text-accent">
+                        <Clapperboard size={14} strokeWidth={1.8} />
+                      </span>
+                      Vidéo 360°
+                      <span className="ml-auto font-mono text-[10.5px] font-normal text-ink-4">MP4 · 60 i/s</span>
+                    </p>
+                    <div className="mt-3 grid grid-cols-[1.4fr_1fr] gap-2">
+                      <Segmented
+                        ariaLabel="Format vidéo"
+                        value={videoAspect}
+                        onChange={setVideoAspect}
+                        options={[
+                          { value: "square", label: "1:1" },
+                          { value: "portrait", label: "9:16" },
+                          { value: "landscape", label: "16:9" },
+                        ]}
+                      />
+                      <Segmented
+                        ariaLabel="Durée de la boucle"
+                        value={String(videoSeconds)}
+                        onChange={(next) => setVideoSeconds(Number(next))}
+                        options={[4, 6, 10].map((value) => ({ value: String(value), label: `${value}s` }))}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={exportVideo}
+                      className="focus-ring press mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary text-[13px] font-medium text-primary-foreground hover:bg-ink-2 [--ring-offset:2px]"
+                    >
+                      Enregistrer la boucle
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => exportAs("png")}
-                    className="focus-ring mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-accent text-[13px] font-medium text-white shadow-[0_6px_16px_-8px_#2f5bff] transition-colors hover:bg-accent-strong press [--ring-offset:2px]"
-                  >
-                    Générer le PNG · {pngSize} px
-                  </button>
-                  <p className="mt-2 text-[11px] leading-[1.4] text-ink-4">
-                    {pngBackground
-                      ? "Le fond, le halo et le sol miroir sont intégrés."
-                      : "Fond transparent avec ombre douce."}
-                  </p>
-                </div>
 
-                <div className="mx-3 h-px bg-hairline" />
+                  <div className="mx-3 h-px bg-hairline" />
 
-                {/* Video */}
-                <div className="rounded-[12px] p-3">
-                  <p className="flex items-center gap-2 text-[13px] font-semibold">
-                    <Clapperboard size={15} strokeWidth={1.8} className="text-accent" />
-                    Vidéo 360°
-                  </p>
-                  <div className="mt-3">
-                    <Segmented
-                      ariaLabel="Format vidéo"
-                      value={videoAspect}
-                      onChange={setVideoAspect}
-                      options={[
-                        { value: "square", label: "1:1" },
-                        { value: "portrait", label: "9:16" },
-                        { value: "landscape", label: "16:9" },
-                      ]}
-                    />
-                  </div>
-                  <div className="mt-2">
-                    <Segmented
-                      ariaLabel="Durée de la boucle"
-                      value={String(videoSeconds)}
-                      onChange={(next) => setVideoSeconds(Number(next))}
-                      options={[4, 6, 10].map((value) => ({ value: String(value), label: `${value} s` }))}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={exportVideo}
-                    className="focus-ring mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary text-[13px] font-medium text-primary-foreground press [--ring-offset:2px]"
-                  >
-                    Enregistrer la boucle
-                  </button>
-                  <p className="mt-2 text-[11px] leading-[1.4] text-ink-4 [text-wrap:pretty]">
-                    Un tour complet en 60 images/s, qui boucle sans coupure, avec le fond. MP4.
-                  </p>
-                </div>
-
-                <div className="mx-3 h-px bg-hairline" />
-
-                {/* 3D */}
-                <div className="p-3">
-                  <p className="flex items-center gap-2 text-[13px] font-semibold">
-                    <Box size={15} strokeWidth={1.8} className="text-accent" />
-                    Fichiers 3D
-                  </p>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[
-                      { kind: "glb" as const, title: "GLB", detail: "Web · three.js · AR" },
-                      { kind: "stl" as const, title: "STL", detail: "Impression 3D · mm" },
-                    ].map((item) => (
-                      <button
-                        key={item.kind}
-                        type="button"
-                        onClick={() => exportAs(item.kind)}
-                        className="focus-ring rounded-[10px] bg-surface px-3 py-2.5 text-left shadow-raise transition-shadow duration-150 hover:shadow-float [--ring-offset:1px]"
-                      >
-                        <span className="block text-[13px] font-semibold text-ink">.{item.title.toLowerCase()}</span>
-                        <span className="block truncate text-[11px] text-ink-4">{item.detail}</span>
-                      </button>
-                    ))}
+                  {/* 3D */}
+                  <div className="p-3">
+                    <p className="flex items-center gap-2 text-[13px] font-semibold">
+                      <span className="grid size-7 place-items-center rounded-[8px] bg-accent-soft text-accent">
+                        <Box size={14} strokeWidth={1.8} />
+                      </span>
+                      Fichiers 3D
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {[
+                        { kind: "glb" as const, title: "GLB", detail: "Web · three.js · AR" },
+                        { kind: "stl" as const, title: "STL", detail: "Impression 3D · mm" },
+                      ].map((item) => (
+                        <button
+                          key={item.kind}
+                          type="button"
+                          onClick={() => exportAs(item.kind)}
+                          className="focus-ring group/file flex items-center justify-between gap-2 rounded-[10px] bg-surface px-3 py-2.5 text-left shadow-raise transition-[box-shadow,translate] duration-200 hover:-translate-y-px hover:shadow-float [--ring-offset:1px]"
+                        >
+                          <span className="min-w-0">
+                            <span className="block text-[13px] font-semibold text-ink">.{item.title.toLowerCase()}</span>
+                            <span className="block truncate text-[11px] text-ink-4">{item.detail}</span>
+                          </span>
+                          <Download
+                            size={14}
+                            strokeWidth={1.8}
+                            className="shrink-0 text-ink-4 transition-[color,translate] duration-200 group-hover/file:translate-y-0.5 group-hover/file:text-accent"
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1542,10 +1629,10 @@ export function Studio() {
         </div>
       </header>
 
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 gap-3 px-3 pb-3 max-tab:px-2 max-tab:pb-2 max-fold:p-0">
         {/* Viewport */}
         <main
-          className="relative m-3 min-w-0 flex-1 overflow-hidden rounded-[22px] shadow-[inset_0_0_0_1px_rgba(15,17,22,0.06)] max-tab:m-2 max-tab:rounded-[18px] max-fold:m-0 max-fold:rounded-none"
+          className="relative min-w-0 flex-1 overflow-hidden rounded-[20px] shadow-[inset_0_0_0_1px_rgba(15,17,22,0.06)] max-fold:rounded-none"
           style={{ background: bgStyle }}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
@@ -1578,38 +1665,11 @@ export function Studio() {
             }
           />
 
-          {/* View switcher */}
-          {trace && (
-            <div className={`absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-[12px] p-1 max-tab:top-2 ${overlay}`}>
-              {(
-                [
-                  ["angle", "3/4"],
-                  ["front", "Face"],
-                  ["side", "Profil"],
-                  ["top", "Dessus"],
-                ] as [CameraView, string][]
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={view === value}
-                  onClick={() => {
-                    setView(value);
-                    setFitTick((tick) => tick + 1);
-                  }}
-                  className={`focus-ring rounded-[9px] px-3 py-1.5 text-[12.5px] font-medium transition-[background-color,color,box-shadow] duration-150 [--ring-offset:1px] ${
-                    view === value ? overlayActive : overlayButton
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Dimensions readout */}
           {trace && (
-            <div className={`pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-3 rounded-[10px] px-3 py-2 font-mono text-[11px] max-tab:hidden ${overlay}`}>
+            <div
+              className={`animate-float-in pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-3 rounded-[10px] px-3 py-2 font-mono text-[11px] max-tab:left-3 max-tab:top-3 max-phone:hidden ${overlay}`}
+            >
               {(
                 [
                   ["L", stats.width],
@@ -1626,74 +1686,111 @@ export function Studio() {
             </div>
           )}
 
-          {/* Quick actions */}
-          {trace && (
-            <div className={`absolute right-4 top-4 z-10 flex flex-col gap-0.5 rounded-[12px] p-1 max-tab:right-2 max-tab:top-14 ${overlay}`}>
-              <button
-                type="button"
-                aria-label="Recadrer"
-                title="Recadrer (F)"
-                onClick={() => {
-                  setView("angle");
-                  setFitTick((value) => value + 1);
-                }}
-                className={`focus-ring grid size-9 place-items-center rounded-[9px] transition-colors duration-150 [--ring-offset:1px] ${overlayButton}`}
-              >
-                <Maximize2 size={15} strokeWidth={1.8} />
-              </button>
-              <button
-                type="button"
-                aria-label="Rotation automatique"
-                aria-pressed={autoRotate}
-                title="Rotation automatique (R)"
-                onClick={() => setAutoRotate((value) => !value)}
-                className={`focus-ring grid size-9 place-items-center rounded-[9px] transition-colors duration-150 [--ring-offset:1px] ${
-                  autoRotate ? overlayActive : overlayButton
-                }`}
-              >
-                <RotateCw size={15} strokeWidth={1.8} className={autoRotate ? "animate-[spin_4s_linear_infinite]" : ""} />
-              </button>
-              <button
-                type="button"
-                aria-label="Changer la qualité"
-                title={`Qualité : ${qualityOptions.find((option) => option.value === quality)?.label}`}
-                onClick={() =>
-                  setQuality((current) => (current === "draft" ? "high" : current === "high" ? "ultra" : "draft"))
-                }
-                className={`focus-ring grid size-9 place-items-center rounded-[9px] font-mono text-[10px] font-semibold transition-colors duration-150 [--ring-offset:1px] ${overlayButton}`}
-              >
-                {quality === "draft" ? "SD" : quality === "high" ? "HD" : "4K"}
-              </button>
-            </div>
-          )}
-
           {/* Finish dock */}
           {trace && (
-            <div className="absolute inset-x-0 bottom-4 z-10 flex justify-center px-3 max-tab:bottom-3">
-              <div className={`no-scrollbar flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[16px] p-1.5 ${overlay}`}>
+            <div className="absolute right-4 top-1/2 z-10 -translate-y-1/2 max-tab:hidden [@media(max-height:620px)]:hidden">
+              <div
+                role="group"
+                aria-label="Finitions rapides"
+                className={`animate-float-in flex flex-col items-center gap-0.5 rounded-[16px] p-1.5 [animation-delay:80ms] ${overlay}`}
+              >
                 {dockFinishes.map((id, index) => {
                   const item = finishById(id);
                   const active = finish.id === id;
                   return (
                     <div key={id} className="contents">
                       {index === 5 && (
-                        <span className={`mx-1 h-5 w-px shrink-0 ${darkStage ? "bg-white/15" : "bg-hairline-strong"}`} />
+                        <span className={`my-1 h-px w-5 shrink-0 ${darkStage ? "bg-white/15" : "bg-hairline-strong"}`} />
                       )}
-                      <button
-                        type="button"
-                        aria-label={item.name}
-                        title={item.name}
-                        aria-pressed={active}
-                        onClick={() => applyFinish(id)}
-                        className={`focus-ring grid size-9 shrink-0 place-items-center rounded-[11px] transition-[background-color,box-shadow,scale] duration-200 hover:scale-110 [--ring-offset:1px] ${
-                          active ? "shadow-[0_0_0_1.5px_var(--color-accent)]" : ""
-                        }`}
-                      >
-                        <Sphere finish={item} size={24} />
-                      </button>
+                      <Tip label={item.name} side="left">
+                        <button
+                          type="button"
+                          aria-label={item.name}
+                          aria-pressed={active}
+                          onClick={() => applyFinish(id)}
+                          className={`focus-ring grid size-9 shrink-0 place-items-center rounded-[11px] transition-[box-shadow,scale] duration-300 ease-spring hover:scale-110 active:scale-95 [--ring-offset:1px] ${
+                            active ? "shadow-[0_0_0_1.5px_var(--color-accent)]" : ""
+                          }`}
+                        >
+                          <Sphere finish={item} size={24} />
+                        </button>
+                      </Tip>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Camera toolbar */}
+          {trace && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-3 max-tab:bottom-3">
+              <div
+                className={`animate-float-in pointer-events-auto flex items-center gap-1 rounded-[14px] p-1 [animation-delay:140ms] ${overlay}`}
+              >
+                <Segmented
+                  ariaLabel="Point de vue"
+                  size="sm"
+                  tone={darkStage ? "dark" : "light"}
+                  className="w-[264px] max-phone:w-[236px]"
+                  value={view}
+                  onChange={(next) => {
+                    setView(next);
+                    setFitTick((tick) => tick + 1);
+                  }}
+                  options={(
+                    [
+                      ["angle", "3/4"],
+                      ["front", "Face"],
+                      ["side", "Profil"],
+                      ["top", "Dessus"],
+                    ] as [CameraView, string][]
+                  ).map(([value, label]) => ({ value, label }))}
+                />
+                <span className={`mx-1 h-5 w-px ${darkStage ? "bg-white/15" : "bg-hairline-strong"}`} />
+                <Tip label="Recadrer" shortcut="F">
+                  <button
+                    type="button"
+                    aria-label="Recadrer"
+                    onClick={() => {
+                      setView("angle");
+                      setFitTick((value) => value + 1);
+                    }}
+                    className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${overlayButton}`}
+                  >
+                    <Maximize2 size={15} strokeWidth={1.8} />
+                  </button>
+                </Tip>
+                <Tip label="Rotation automatique" shortcut="R">
+                  <button
+                    type="button"
+                    aria-label="Rotation automatique"
+                    aria-pressed={autoRotate}
+                    onClick={() => setAutoRotate((value) => !value)}
+                    className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${
+                      autoRotate ? overlayActive : overlayButton
+                    }`}
+                  >
+                    <RotateCw size={15} strokeWidth={1.8} className={autoRotate ? "animate-[spin_4s_linear_infinite]" : ""} />
+                  </button>
+                </Tip>
+                <Tip
+                  label={`Qualité : ${qualityOptions.find((option) => option.value === quality)?.label}`}
+                  className="max-phone:hidden"
+                >
+                  <button
+                    type="button"
+                    aria-label="Changer la qualité"
+                    onClick={() =>
+                      setQuality((current) => (current === "draft" ? "high" : current === "high" ? "ultra" : "draft"))
+                    }
+                    className={`focus-ring press grid h-8 w-9 place-items-center rounded-[9px] font-mono text-[10.5px] font-semibold [--press:.9] [--ring-offset:1px] ${overlayButton}`}
+                  >
+                    <span key={quality} className="animate-pop">
+                      {quality === "draft" ? "SD" : quality === "high" ? "HD" : "4K"}
+                    </span>
+                  </button>
+                </Tip>
               </div>
             </div>
           )}
@@ -1704,10 +1801,10 @@ export function Studio() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className={`focus-ring group flex w-full max-w-[520px] flex-col items-center rounded-[28px] border border-dashed px-8 py-11 transition-colors duration-300 [--ring-offset:4px] max-phone:px-5 max-phone:py-8 ${
+                className={`focus-ring group animate-rise flex w-full max-w-[520px] flex-col items-center rounded-[28px] border border-dashed px-8 py-11 transition-[border-color,background-color] duration-300 [--ring-offset:4px] max-phone:px-5 max-phone:py-8 ${
                   darkStage
                     ? "border-white/15 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.06]"
-                    : "border-black/15 bg-white/60 hover:border-black/25 hover:bg-white/80"
+                    : "border-black/15 bg-white/60 hover:border-accent/40 hover:bg-white/80"
                 }`}
               >
                 <span className="mb-6 grid size-16 place-items-center rounded-[20px] bg-white shadow-float transition-transform duration-500 ease-spring group-hover:-translate-y-1 group-hover:rotate-3">
@@ -1729,7 +1826,7 @@ export function Studio() {
                   se passe sur votre machine.
                 </span>
                 <span
-                  className={`mt-7 inline-flex h-11 items-center gap-2 rounded-[12px] px-5 text-[14px] font-medium ${
+                  className={`mt-7 inline-flex h-11 items-center gap-2 rounded-[12px] px-5 text-[14px] font-medium transition-transform duration-300 ease-spring group-hover:scale-[1.03] ${
                     darkStage ? "bg-white text-ink" : "bg-primary text-primary-foreground"
                   }`}
                 >
@@ -1738,29 +1835,31 @@ export function Studio() {
                 </span>
               </button>
 
-              <p className={`eyebrow mt-9 ${darkStage ? "!text-white/45" : ""}`}>Ou partir d’une forme</p>
-              <div className="mt-3 flex max-w-[520px] flex-wrap items-center justify-center gap-1.5">
+              <p className={`eyebrow animate-rise delay-1 mt-9 ${darkStage ? "!text-white/45" : ""}`}>
+                Ou partir d’une forme
+              </p>
+              <div className="animate-rise delay-2 mt-3 flex max-w-[520px] flex-wrap items-center justify-center gap-1.5">
                 {samples.map((sample) => (
-                  <button
-                    key={sample.id}
-                    type="button"
-                    aria-label={`Ouvrir la forme ${sample.name}`}
-                    title={sample.name}
-                    onClick={() => loadSample(sample.id)}
-                    className={`focus-ring grid size-11 place-items-center rounded-[12px] press [--press:.92] [--ring-offset:2px] ${
-                      darkStage
-                        ? "bg-white/[0.06] text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/15 hover:text-white"
-                        : "bg-white text-ink-2 shadow-raise hover:text-ink hover:shadow-float"
-                    }`}
-                  >
-                    <SampleIcon sample={sample} size={19} />
-                  </button>
+                  <Tip key={sample.id} label={sample.name}>
+                    <button
+                      type="button"
+                      aria-label={`Ouvrir la forme ${sample.name}`}
+                      onClick={() => loadSample(sample.id)}
+                      className={`focus-ring grid size-11 place-items-center rounded-[12px] transition-[translate,box-shadow,color,background-color,scale] duration-300 ease-spring hover:-translate-y-0.5 active:scale-90 [--ring-offset:2px] ${
+                        darkStage
+                          ? "bg-white/[0.06] text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/15 hover:text-white"
+                          : "bg-white text-ink-2 shadow-raise hover:text-ink hover:shadow-float"
+                      }`}
+                    >
+                      <SampleIcon sample={sample} size={19} />
+                    </button>
+                  </Tip>
                 ))}
               </div>
               <button
                 type="button"
                 onClick={() => loadSample("solidwave")}
-                className={`focus-ring mt-5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors [--ring-offset:2px] ${
+                className={`focus-ring animate-rise delay-3 mt-5 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium transition-colors [--ring-offset:2px] ${
                   darkStage ? "text-white/55 hover:text-white" : "text-ink-3 hover:text-ink"
                 }`}
               >
@@ -1771,8 +1870,8 @@ export function Studio() {
           )}
 
           {(busy || exporting) && (
-            <div className="absolute inset-0 z-30 grid place-items-center bg-black/20 backdrop-blur-[2px]">
-              <div className="flex w-[240px] flex-col items-center rounded-[20px] bg-surface p-6 shadow-float">
+            <div className="absolute inset-0 z-30 grid animate-[panel-in_.25s_ease-out_both] place-items-center bg-black/15 backdrop-blur-[3px]">
+              <div className="animate-pop flex w-[248px] flex-col items-center rounded-[20px] bg-surface p-6 shadow-float">
                 <span className="grid size-12 place-items-center rounded-full bg-accent-soft text-accent">
                   {exporting ? (
                     <Sparkles size={20} strokeWidth={1.6} className="animate-pulse" />
@@ -1793,7 +1892,7 @@ export function Studio() {
                 <span className="mt-4 h-1 w-full overflow-hidden rounded-full bg-well-strong">
                   {recordProgress !== null ? (
                     <span
-                      className="block h-full rounded-full bg-accent transition-[width] duration-150"
+                      className="block h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
                       style={{ width: `${recordProgress * 100}%` }}
                     />
                   ) : (
@@ -1804,13 +1903,13 @@ export function Studio() {
             </div>
           )}
 
-          {!panelOpen && (
+          {!panelOpen && trace && (
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
-              className="focus-ring glass absolute bottom-20 right-4 z-20 hidden h-10 items-center gap-2 rounded-[12px] px-4 text-[13px] font-medium text-ink press [--ring-offset:2px] max-tab:flex"
+              className="focus-ring glass press animate-float-in absolute bottom-[72px] right-3 z-20 hidden h-10 items-center gap-2 rounded-[12px] px-4 text-[13px] font-medium text-ink [--ring-offset:2px] max-tab:flex"
             >
-              <PanelLeftOpen size={15} strokeWidth={1.7} />
+              <SlidersHorizontal size={15} strokeWidth={1.7} />
               Modifier
             </button>
           )}
@@ -1818,88 +1917,57 @@ export function Studio() {
 
         {/* Inspector */}
         {panelOpen && (
-          <aside className="flex w-[340px] shrink-0 flex-col border-l border-hairline bg-surface max-desk:w-[310px] max-tab:absolute max-tab:inset-x-0 max-tab:bottom-0 max-tab:z-30 max-tab:h-[62dvh] max-tab:w-auto max-tab:rounded-t-[22px] max-tab:border-l-0 max-tab:shadow-float">
-            <div className="hidden gap-1 p-2 max-tab:flex">
-              {tabs.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={tab === item.id}
-                  onClick={() => setTab(item.id)}
-                  className={`focus-ring flex h-9 flex-1 items-center justify-center rounded-[10px] text-[12px] font-medium [--ring-offset:1px] ${
-                    tab === item.id ? "bg-well-strong text-ink" : "text-ink-3"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+          <aside className="flex w-[348px] shrink-0 animate-[panel-in_.38s_cubic-bezier(0.23,1,0.32,1)_both] flex-col overflow-hidden rounded-[20px] bg-surface shadow-pane max-desk:w-[316px] max-tab:absolute max-tab:inset-x-0 max-tab:bottom-0 max-tab:z-30 max-tab:h-[64dvh] max-tab:w-auto max-tab:rounded-b-none max-tab:rounded-t-[22px] max-tab:shadow-float">
+            <span aria-hidden="true" className="mx-auto mt-2 hidden h-1 w-9 shrink-0 rounded-full bg-hairline-strong max-tab:block" />
+            {/* Tabs */}
+            <div className="shrink-0 p-2 pb-0">
+              <div role="tablist" aria-label="Réglages du studio" className="relative grid grid-cols-5 rounded-[14px] bg-well p-1">
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-1 left-1 top-1 rounded-[11px] bg-surface shadow-raise transition-transform duration-[400ms] ease-spring"
+                  style={{ width: "calc((100% - 8px) / 5)", transform: `translateX(${activeIndex * 100}%)` }}
+                />
+                {tabs.map((item, index) => {
+                  const active = tab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      title={`${item.label} (${index + 1})`}
+                      onClick={() => setTab(item.id)}
+                      className={`focus-ring relative z-[1] flex flex-col items-center gap-1 rounded-[11px] py-2 text-[10.5px] font-medium transition-colors duration-200 [--ring-offset:1px] ${
+                        active ? "text-ink" : "text-ink-4 hover:text-ink-2"
+                      }`}
+                    >
+                      <span
+                        className={`transition-[color,scale] duration-300 ease-spring ${active ? "scale-110 text-accent" : ""}`}
+                      >
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 max-tab:hidden">
-              <h2 className="text-[15px] font-semibold tracking-[-0.02em]">{activeTab.label}</h2>
-              <span className="font-mono text-[10.5px] text-ink-4">{tabs.indexOf(activeTab) + 1} / 5</span>
-            </div>
-
-            <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto">
-              {tab === "look" && lookPanel}
-              {tab === "shape" && shapePanel}
-              {tab === "material" && materialPanel}
-              {tab === "light" && lightPanel}
-              {tab === "render" && renderPanel}
-            </div>
-
-            <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-hairline px-5 text-[11px] text-ink-4 max-tab:hidden">
-              <span className="flex items-center gap-1.5">
-                <span className={kbd}>F</span> cadrer
-                <span className={kbd}>R</span> rotation
-                <span className={kbd}>1–5</span> onglets
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className={kbd}>Ctrl V</span> coller
-              </span>
+            <div
+              role="tabpanel"
+              aria-label={tabs[activeIndex].label}
+              className="thin-scrollbar mt-1 min-h-0 flex-1 overflow-y-auto"
+            >
+              <div key={tab} className="stagger">
+                {tab === "look" && lookPanel}
+                {tab === "shape" && shapePanel}
+                {tab === "material" && materialPanel}
+                {tab === "light" && lightPanel}
+                {tab === "render" && renderPanel}
+              </div>
             </div>
           </aside>
         )}
-
-        {/* Tool rail */}
-        <nav
-          aria-label="Outils du studio"
-          className="flex w-[68px] shrink-0 flex-col items-center gap-1 border-l border-hairline bg-surface py-3 max-tab:hidden"
-        >
-          {tabs.map((item, index) => {
-            const active = panelOpen && tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={active}
-                title={`${item.label} (${index + 1})`}
-                onClick={() => {
-                  if (active) setPanelOpen(false);
-                  else {
-                    setTab(item.id);
-                    setPanelOpen(true);
-                  }
-                }}
-                className={`focus-ring relative flex w-[56px] flex-col items-center gap-1 rounded-[12px] py-2 text-[10.5px] font-medium transition-colors duration-150 [--ring-offset:1px] ${
-                  active ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-well-strong hover:text-ink"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => setPanelOpen((open) => !open)}
-            aria-label={panelOpen ? "Masquer le panneau" : "Afficher le panneau"}
-            title="Afficher / masquer le panneau (Ctrl B)"
-            className="focus-ring mt-auto grid size-10 place-items-center rounded-[12px] text-ink-4 transition-colors hover:bg-well-strong hover:text-ink [--ring-offset:1px]"
-          >
-            {panelOpen ? <PanelLeftOpen size={17} strokeWidth={1.6} className="rotate-180" /> : <PanelLeftClose size={17} strokeWidth={1.6} className="rotate-180" />}
-          </button>
-        </nav>
 
         <input
           ref={fileInputRef}
@@ -1917,8 +1985,11 @@ export function Studio() {
       {toast && (
         <div
           role="status"
-          className="animate-rise fixed bottom-20 left-1/2 z-[80] -translate-x-1/2 rounded-[12px] bg-primary px-4 py-2.5 text-[13px] font-medium text-primary-foreground shadow-float [animation-duration:.3s]"
+          className="animate-pop fixed bottom-6 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-[12px] bg-primary py-2.5 pl-3 pr-4 text-[13px] font-medium text-primary-foreground shadow-float"
         >
+          <span className="grid size-5 place-items-center rounded-full bg-white/15">
+            <Check size={12} strokeWidth={2.4} />
+          </span>
           {toast}
         </div>
       )}
@@ -1928,7 +1999,7 @@ export function Studio() {
           type="button"
           aria-label="Fermer le panneau"
           onClick={() => setPanelOpen(false)}
-          className="fixed inset-0 z-20 hidden bg-black/30 max-tab:block"
+          className="fixed inset-0 z-20 hidden bg-black/25 max-tab:block"
         />
       )}
     </div>
