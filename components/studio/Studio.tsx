@@ -375,6 +375,11 @@ function AiNoticeCard({ notice, onRetry, onSignOut }: { notice: AiNotice; onRetr
   );
 }
 
+/** Import limits: beyond these the tracer would freeze the tab. */
+const MAX_SVG_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 40_000_000;
+
 export function Studio() {
   /* ---------------------------------------------------------------- */
   /* State                                                             */
@@ -673,6 +678,10 @@ export function Studio() {
         notify("Utilisez une image SVG, PNG, JPG ou WebP.");
         return;
       }
+      if (file.size > (isSvg ? MAX_SVG_BYTES : MAX_IMAGE_BYTES)) {
+        notify(`Fichier trop lourd (${isSvg ? "5" : "25"} Mo maximum).`);
+        return;
+      }
       setBusy(true);
       await new Promise((resolve) => window.setTimeout(resolve, 60));
       try {
@@ -692,6 +701,11 @@ export function Studio() {
         } else {
           const url = URL.createObjectURL(file);
           const image = await loadHtmlImage(url);
+          if (image.naturalWidth * image.naturalHeight > MAX_IMAGE_PIXELS) {
+            URL.revokeObjectURL(url);
+            notify("Image trop grande (40 mégapixels maximum).");
+            return;
+          }
           loadRaster(image, url, name);
           notify("Contour tracé");
         }
@@ -847,6 +861,10 @@ export function Studio() {
     (file: File) => {
       if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
         notify("Utilisez une photo JPG, PNG ou WebP.");
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        notify("Photo trop lourde (25 Mo maximum).");
         return;
       }
       const url = URL.createObjectURL(file);

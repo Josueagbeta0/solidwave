@@ -13,6 +13,9 @@ const TOKEN = "https://huggingface.co/oauth/token";
 const USERINFO = "https://huggingface.co/oauth/userinfo";
 const STORE = "solidwave.gpu-session";
 const PENDING = "solidwave.gpu-pending";
+const PENDING_TTL = 10 * 60 * 1000;
+/** Longest session kept, whatever the provider says. */
+const MAX_SESSION = 8 * 3600;
 
 export type GpuSession = { token: string; expiresAt: number; name: string | null };
 
@@ -33,7 +36,11 @@ export function readSession(): GpuSession | null {
     const raw = window.localStorage.getItem(STORE);
     if (!raw) return null;
     const session = JSON.parse(raw) as GpuSession;
-    if (!session.token || session.expiresAt < Date.now() + 60_000) return null;
+    if (typeof session.token !== "string" || !session.token || typeof session.expiresAt !== "number") return null;
+    if (session.expiresAt < Date.now() + 60_000) {
+      window.localStorage.removeItem(STORE);
+      return null;
+    }
     return session;
   } catch {
     return null;
@@ -70,7 +77,7 @@ export async function signIn(signal?: AbortSignal): Promise<GpuSession | null> {
   const challenge = base64url(
     new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))),
   );
-  window.localStorage.setItem(PENDING, JSON.stringify({ verifier, state }));
+  window.localStorage.setItem(PENDING, JSON.stringify({ verifier, state, at: Date.now() }));
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -107,14 +114,18 @@ export async function completeSignIn(): Promise<boolean> {
   const code = params.get("code");
   const state = params.get("state");
   if (!code || !state) return false;
-  let pending: { verifier: string; state: string } | null = null;
+  // The one-time code must not linger in the address bar or history.
+  window.history.replaceState(null, "", window.location.pathname);
+  let pending: { verifier: string; state: string; at?: number } | null = null;
   try {
     pending = JSON.parse(window.localStorage.getItem(PENDING) ?? "null");
   } catch {
     pending = null;
   }
-  if (!pending || pending.state !== state) return false;
   window.localStorage.removeItem(PENDING);
+  // CSRF guard: the state must match an attempt started here less than 10 minutes ago.
+  if (!pending || typeof pending.verifier !== "string" || pending.state !== state) return false;
+  if (!pending.at || Date.now() - pending.at > PENDING_TTL) return false;
 
   const response = await fetch(TOKEN, {
     method: "POST",
@@ -128,20 +139,25 @@ export async function completeSignIn(): Promise<boolean> {
     }),
   });
   if (!response.ok) throw new Error("token");
-  const data = (await response.json()) as { access_token: string; expires_in?: number };
+  const data = (await response.json()) as { access_token?: unknown; expires_in?: unknown };
+  if (typeof data.access_token !== "string" || !data.access_token) throw new Error("token");
+  const accessToken = data.access_token;
+  const lifetime =
+    typeof data.expires_in === "number" && data.expires_in > 0 ? Math.min(data.expires_in, MAX_SESSION) : MAX_SESSION;
   let name: string | null = null;
   try {
-    const info = await fetch(USERINFO, { headers: { Authorization: `Bearer ${data.access_token}` } });
+    const info = await fetch(USERINFO, { headers: { Authorization: `Bearer ${accessToken}` } });
     if (info.ok) {
       const user = (await info.json()) as { preferred_username?: string; name?: string };
-      name = user.preferred_username ?? user.name ?? null;
+      const raw = user.preferred_username ?? user.name;
+      name = typeof raw === "string" ? raw.slice(0, 64) : null;
     }
   } catch {
     /* the name is only cosmetic */
   }
   const session: GpuSession = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in ?? 8 * 3600) * 1000,
+    token: accessToken,
+    expiresAt: Date.now() + lifetime * 1000,
     name,
   };
   window.localStorage.setItem(STORE, JSON.stringify(session));

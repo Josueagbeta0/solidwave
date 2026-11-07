@@ -120,9 +120,23 @@ export async function photoToModel(image: Blob, token: string | null, onProgress
   if (!url) throw new Error("no-file");
 
   onProgress("download");
-  const response = await fetch(url);
+  if (!isServiceFile(url)) throw new Error("download");
+  const response = await fetch(url, { credentials: "omit", referrerPolicy: "no-referrer" });
   if (!response.ok) throw new Error("download");
   return glbToModel(await response.arrayBuffer());
+}
+
+/** The result must come from the GPU service over HTTPS, never from an arbitrary address. */
+function isServiceFile(url: string) {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return (
+      protocol === "https:" &&
+      (hostname.endsWith(".hf.space") || hostname === "huggingface.co" || hostname.endsWith(".huggingface.co"))
+    );
+  } catch {
+    return false;
+  }
 }
 
 /** One merged, centred mesh in the model's own units, plus its colour texture. */

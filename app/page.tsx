@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SmoothScroll } from "@/components/motion";
@@ -11,7 +12,9 @@ import { OpenSource } from "@/components/landing/OpenSource";
 import { Faq } from "@/components/landing/Faq";
 import { Cta } from "@/components/landing/Cta";
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Rendered per request so Next can stamp the CSP nonce on its scripts (see proxy.ts).
+  await connection();
   return (
     <>
       <SmoothScroll />
