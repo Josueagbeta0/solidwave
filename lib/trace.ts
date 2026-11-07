@@ -154,7 +154,11 @@ function buildField(
   for (let i = 0; i < total; i++) {
     if (pixels[i * 4 + 3] < 250) transparent++;
   }
-  const resolved: TraceMode = mode === "auto" ? (transparent > total * 0.01 ? "alpha" : "dark") : mode;
+  // Auto: follow transparency when there is some; otherwise treat everything
+  // that differs from the background colour as the logo. Picking only "dark"
+  // pixels lost pale parts on white (a yellow chip) and swallowed whole
+  // dark backgrounds (a logo on burgundy).
+  const resolved: TraceMode = mode === "auto" ? (transparent > total * 0.01 ? "alpha" : "color") : mode;
 
   const field = new Float32Array(total);
 
@@ -164,24 +168,27 @@ function buildField(
   }
 
   if (resolved === "color") {
-    // Reference: average of the four corners.
-    const corners = [0, width - 1, (height - 1) * width, height * width - 1];
-    let rr = 0;
-    let gg = 0;
-    let bb = 0;
-    for (const index of corners) {
-      rr += pixels[index * 4];
-      gg += pixels[index * 4 + 1];
-      bb += pixels[index * 4 + 2];
-    }
-    rr /= 4;
-    gg /= 4;
-    bb /= 4;
+    // Background = per-channel median of the image border: robust to a logo
+    // touching an edge, JPEG noise or a stray watermark.
+    const border: number[] = [];
+    for (let x = 0; x < width; x++) border.push(x, (height - 1) * width + x);
+    for (let y = 1; y < height - 1; y++) border.push(y * width, y * width + width - 1);
+    const median = (channel: number) => {
+      const values = border.map((index) => pixels[index * 4 + channel]).sort((a, b) => a - b);
+      return values[values.length >> 1];
+    };
+    const rr = median(0);
+    const gg = median(1);
+    const bb = median(2);
+    // Distance in a perceptually weighted RGB space. With the default 0.5
+    // cutoff the edge sits ~75/255 from the background: pale parts (a yellow
+    // chip on white, light grey type) still count, while JPEG ringing around
+    // dark outlines (which drew a background-coloured rim) does not.
     for (let i = 0; i < total; i++) {
-      const dr = pixels[i * 4] - rr;
-      const dg = pixels[i * 4 + 1] - gg;
-      const db = pixels[i * 4 + 2] - bb;
-      const distance = Math.sqrt(dr * dr + dg * dg + db * db) / 441;
+      const dr = (pixels[i * 4] - rr) * 0.9;
+      const dg = (pixels[i * 4 + 1] - gg) * 1.2;
+      const db = (pixels[i * 4 + 2] - bb) * 0.8;
+      const distance = Math.sqrt(dr * dr + dg * dg + db * db) / 150;
       field[i] = clamp(distance, 0, 1);
     }
     return { field, resolved };
@@ -196,6 +203,36 @@ function buildField(
     field[i] = inverted ? 1 - lum : lum;
   }
   return { field, resolved };
+}
+
+/** Separable square max/min filter (grayscale dilation / erosion), in place. */
+function morph(
+  field: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+  pick: (a: number, b: number) => number,
+) {
+  const temp = new Float32Array(field.length);
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) {
+      let value = field[row + x];
+      const from = Math.max(0, x - radius);
+      const to = Math.min(width - 1, x + radius);
+      for (let k = from; k <= to; k++) value = pick(value, field[row + k]);
+      temp[row + x] = value;
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      let value = temp[y * width + x];
+      const from = Math.max(0, y - radius);
+      const to = Math.min(height - 1, y + radius);
+      for (let k = from; k <= to; k++) value = pick(value, temp[k * width + x]);
+      field[y * width + x] = value;
+    }
+  }
 }
 
 function marchingSquares(
@@ -517,7 +554,16 @@ export function traceImageSource(
   context.drawImage(image, 0, 0, width, height);
 
   const data = context.getImageData(0, 0, width, height).data;
-  const { field } = buildField(data, width, height, options.mode);
+  const { field, resolved } = buildField(data, width, height, options.mode);
+  if (resolved === "color") {
+    // Close thin background-coloured slits (inner line art, small type, letters
+    // almost touching) so the object keeps the logo's silhouette; the artwork
+    // texture still paints those lines. Then pull the edge in by one pixel to
+    // drop the anti-aliased / JPEG-ringing rim of background colour.
+    const radius = Math.max(1, Math.round(Math.max(width, height) * 0.004));
+    morph(field, width, height, radius, Math.max);
+    morph(field, width, height, radius + 1, Math.min);
+  }
   gaussian(field, width, height);
   return traceField(field, width, height, options);
 }

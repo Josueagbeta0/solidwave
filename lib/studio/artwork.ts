@@ -16,6 +16,8 @@ const MAX_SIDE = 2048;
 export function createArtworkTexture(
   image: HTMLImageElement | ImageBitmap,
   crop: ArtworkCrop | null,
+  /** Outer silhouette loops in UV space: the artwork is clipped to them, slightly inset. */
+  outlineUV: [number, number][][] = [],
 ): THREE.CanvasTexture | null {
   const naturalWidth = "naturalWidth" in image ? image.naturalWidth || image.width : image.width;
   const naturalHeight = "naturalHeight" in image ? image.naturalHeight || image.height : image.height;
@@ -34,10 +36,47 @@ export function createArtworkTexture(
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // Draw the whole image scaled so the crop fills the canvas: browsers rasterise
-  // SVG at the destination size, so vector logos stay sharp.
-  const draw = () =>
-    ctx.drawImage(image, -u0 * naturalWidth * scale, -v0 * naturalHeight * scale, naturalWidth * scale, naturalHeight * scale);
+  // The artwork alone: the whole image scaled so the crop fills the canvas
+  // (browsers rasterise SVG at the destination size, so vector logos stay sharp),
+  // clipped to the outer silhouette pulled in by ~1.5 source pixels. Outside
+  // it, including the anti-aliased band where the logo meets an opaque
+  // background, colours come from the bleed below (the logo's own edge
+  // colour), so caps and walls never show a rim of background colour. Only
+  // the outer edge is touched: holes and inner line art are kept as drawn.
+  const art = document.createElement("canvas");
+  art.width = width;
+  art.height = height;
+  const artCtx = art.getContext("2d");
+  if (!artCtx) return null;
+  artCtx.drawImage(image, -u0 * naturalWidth * scale, -v0 * naturalHeight * scale, naturalWidth * scale, naturalHeight * scale);
+  if (outlineUV.length) {
+    const path = new Path2D();
+    for (const loop of outlineUV) {
+      loop.forEach(([u, v], index) => {
+        const x = u * width;
+        const y = (1 - v) * height;
+        if (index === 0) path.moveTo(x, y);
+        else path.lineTo(x, y);
+      });
+      path.closePath();
+    }
+    const mask = document.createElement("canvas");
+    mask.width = width;
+    mask.height = height;
+    const maskCtx = mask.getContext("2d");
+    if (maskCtx) {
+      maskCtx.fillStyle = "#fff";
+      maskCtx.fill(path, "nonzero");
+      maskCtx.globalCompositeOperation = "destination-out";
+      maskCtx.lineJoin = "round";
+      maskCtx.lineWidth = Math.max(3, scale * 3);
+      maskCtx.stroke(path);
+      artCtx.globalCompositeOperation = "destination-in";
+      artCtx.drawImage(mask, 0, 0);
+      artCtx.globalCompositeOperation = "source-over";
+    }
+  }
+  const draw = () => ctx.drawImage(art, 0, 0);
 
   // Bleed: wide to narrow blurred copies under the sharp image.
   const unit = Math.max(width, height) / 512;

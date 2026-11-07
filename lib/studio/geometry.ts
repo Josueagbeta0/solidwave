@@ -44,6 +44,8 @@ export type BuiltIcon = {
   relief: boolean;
   /** Where to crop the source artwork so it lands exactly on the outline; null if unknown. */
   artworkCrop: ArtworkCrop | null;
+  /** Outer silhouette loops (no holes) in UV space, 0–1 with v up. */
+  outlineUV: [number, number][][];
 };
 
 type FlatShape = {
@@ -160,7 +162,13 @@ function centerZ(geometry: THREE.BufferGeometry) {
  * (pulled inward along their normal past the bevel), so the sides carry the
  * logo's edge colours instead of whatever surrounds it in the image.
  */
-function applyPlanarUV(geometry: THREE.BufferGeometry, width: number, height: number, inset: number) {
+function applyPlanarUV(
+  geometry: THREE.BufferGeometry,
+  width: number,
+  height: number,
+  bevel: number,
+  margin: number,
+) {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   if (!position || !normal) return;
@@ -168,8 +176,15 @@ function applyPlanarUV(geometry: THREE.BufferGeometry, width: number, height: nu
   for (let i = 0; i < position.count; i++) {
     const nx = normal.getX(i);
     const ny = normal.getY(i);
-    const x = position.getX(i) - nx * inset;
-    const y = position.getY(i) - ny * inset;
+    // On a round bevel a vertex sits about bevel × (horizontal normal) outside
+    // the outline. Pull it back by that, plus a fixed margin, along the
+    // horizontal direction: bevels then read colour from inside the artwork
+    // instead of its anti-aliased border, which showed as a background-coloured
+    // rim (yellow around a logo on yellow).
+    const len = Math.hypot(nx, ny);
+    const pull = len > 0.02 ? (len * bevel + margin) / len : 0;
+    const x = position.getX(i) - nx * pull;
+    const y = position.getY(i) - ny * pull;
     uv[i * 2] = x / width + 0.5;
     uv[i * 2 + 1] = y / height + 0.5;
   }
@@ -225,15 +240,23 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
       triangles: 0,
       relief: false,
       artworkCrop: null,
+      outlineUV: [],
     };
   }
 
-  const { shapes, width, height } = normalized;
-  // Sample a little inside the outline to step off the artwork's anti-aliased edge.
-  const margin = Math.max(width, height) * 0.004 + 0.15;
+  const { shapes, width, height, box: shapeBox } = normalized;
+  // Sample a little inside the outline to step off the artwork's anti-aliased
+  // edge, counted in source pixels for traced images. Kept small so walls take
+  // the logo's outline colour rather than whatever lies deeper inside; the
+  // artwork texture fills the edge band itself (see lib/studio/artwork.ts).
+  const mmPerUnit = width / Math.max(1e-6, shapeBox.max.x - shapeBox.min.x);
+  const margin =
+    result.source === "raster"
+      ? Math.max(2.5 * mmPerUnit, Math.max(width, height) * 0.003)
+      : Math.max(width, height) * 0.006 + 0.3;
 
   const add = (geometry: THREE.BufferGeometry, z = 0) => {
-    applyPlanarUV(geometry, width, height, ((geometry.userData.bevelSize as number | undefined) ?? 0) + margin);
+    applyPlanarUV(geometry, width, height, (geometry.userData.bevelSize as number | undefined) ?? 0, margin);
     const material = new THREE.MeshPhysicalMaterial();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.z = z;
@@ -290,6 +313,9 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
     triangles: Math.round(triangles),
     relief: options.mode === "relief",
     artworkCrop: cropFor(result, normalized.box),
+    outlineUV: shapes.map((shape) =>
+      shape.getPoints(profile.curve).map((point): [number, number] => [point.x / width + 0.5, point.y / height + 0.5]),
+    ),
   };
 }
 

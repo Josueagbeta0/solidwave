@@ -684,7 +684,7 @@ const SoftShadow = memo(function SoftShadow({
     <>
     {/* With on-demand rendering, drei's self-invalidation can stall mid-way and
         leave a half-accumulated grey plane: keep frames coming until it settles. */}
-    <KeepRendering key={shadowKey} ms={4500} />
+    <KeepRendering key={`keep-${shadowKey}`} ms={4500} />
     <AccumulativeShadows
       key={shadowKey}
       temporal
@@ -1173,9 +1173,10 @@ export function IconCanvas({
 
   // The logo's own colours, cropped to the outline of the current object.
   const artworkCrop = icon?.artworkCrop ?? null;
+  const outlineKey = (icon?.outlineUV ?? []).reduce((sum, loop) => sum + loop.length * 7 + (loop[0]?.[0] ?? 0), 0);
   const cropKey = artworkCrop
-    ? `${artworkCrop.u0.toFixed(5)}-${artworkCrop.v0.toFixed(5)}-${artworkCrop.u1.toFixed(5)}-${artworkCrop.v1.toFixed(5)}`
-    : "full";
+    ? `${artworkCrop.u0.toFixed(5)}-${artworkCrop.v0.toFixed(5)}-${artworkCrop.u1.toFixed(5)}-${artworkCrop.v1.toFixed(5)}-${outlineKey.toFixed(4)}`
+    : `full-${outlineKey.toFixed(4)}`;
   useEffect(() => {
     const url = material.artworkUrl;
     if (!url || !icon) {
@@ -1188,7 +1189,7 @@ export function IconCanvas({
     loadHtmlImage(url)
       .then((image) => {
         if (!active) return;
-        texture = createArtworkTexture(image, artworkCrop);
+        texture = createArtworkTexture(image, artworkCrop, icon?.outlineUV ?? []);
         setArtworkTexture(texture);
       })
       .catch(() => {
