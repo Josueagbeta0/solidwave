@@ -42,15 +42,6 @@ export function OpenSource() {
               Voir sur GitHub
               <ArrowUpRight size={15} strokeWidth={2} className="transition-transform duration-300 ease-spring group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </a>
-            <a
-              href={site.author.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="focus-ring group press inline-flex h-12 items-center gap-2 rounded-[14px] bg-surface px-5 text-[15px] font-medium text-ink-2 shadow-raise transition-[color,box-shadow] duration-200 hover:text-ink hover:shadow-float [--press:.96] [--ring-offset:3px]"
-            >
-              Portfolio de {site.author.name.split(" ")[0]}
-              <ArrowUpRight size={15} strokeWidth={2} className="transition-transform duration-300 ease-spring group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </a>
           </div>
         </div>
         <ul className="relative grid content-center gap-3">

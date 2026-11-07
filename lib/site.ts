@@ -10,7 +10,6 @@ export const site = {
   repo: "https://github.com/Josueagbeta0/solidwave",
   author: {
     name: "Josué Agbeta",
-    // TODO: replace with the portfolio URL once known (falls back to the GitHub profile).
-    url: "https://github.com/Josueagbeta0",
+    url: "https://josue-agbeta.vercel.app/",
   },
 };

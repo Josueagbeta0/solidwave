@@ -25,7 +25,7 @@ import {
   ToneMappingMode,
   type EffectComposer as EffectComposerImpl,
 } from "postprocessing";
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GLTFExporter, STLExporter } from "three-stdlib";
 import { ArrayBufferTarget, Muxer } from "mp4-muxer";
@@ -269,6 +269,25 @@ export function StageBackdrop({
   return <primitive object={mesh} />;
 }
 
+/**
+ * Requests a frame on every display refresh for `ms`. With on-demand rendering,
+ * invalidating only from inside useFrame can stall and freeze an animation
+ * half-way (camera moves, the entrance, shadow accumulation), so animations
+ * that must finish drive their frames from here. Returns a cancel function.
+ */
+function keepFrames(invalidate: () => void, ms: number, done?: () => boolean) {
+  // With `done`, run until it reports true (ms is then only a safety cap):
+  // the first frames after a load can take a second to compile shaders.
+  const end = performance.now() + ms;
+  let frame = 0;
+  const tick = () => {
+    invalidate();
+    if (performance.now() < end && !done?.()) frame = requestAnimationFrame(tick);
+  };
+  frame = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(frame);
+}
+
 function CameraRig({
   view,
   lens,
@@ -314,11 +333,15 @@ function CameraRig({
       animation.current = { from: camera.position.clone(), to, progress: 0 };
     }
     invalidate();
+    const stopFrames = keepFrames(invalidate, 6000, () => animation.current === null);
     const cancel = () => {
       animation.current = null;
     };
     controls.addEventListener("start", cancel);
-    return () => controls.removeEventListener("start", cancel);
+    return () => {
+      stopFrames();
+      controls.removeEventListener("start", cancel);
+    };
   }, [view, distance, controls, camera, fitTick, invalidate]);
 
   useFrame((state, delta) => {
@@ -344,6 +367,7 @@ function IconModel({
   settings,
   spinRef,
   entryKey,
+  onEntryEnd,
 }: {
   icon: BuiltIcon | null;
   settings: SceneSettings;
@@ -351,15 +375,19 @@ function IconModel({
   spinRef: React.RefObject<number | null>;
   /** Bumped for each newly loaded object. */
   entryKey: number;
+  /** Called once the entrance has finished. */
+  onEntryEnd?: () => void;
 }) {
   const group = useRef<THREE.Group>(null);
-  // Entrance progress, 0 → 1; null when idle. Starts on each new object.
+  // Entrance start time (ms); -1 = waiting for the first frame; null when idle.
+  // Timed on the clock, not frame count, so it ends on time even on slow devices
+  // or when the first frame spends a moment compiling shaders.
   const entry = useRef<number | null>(null);
   const invalidate = useThree((state) => state.invalidate);
   useEffect(() => {
     if (entryKey === 0) return;
-    entry.current = 0;
-    invalidate();
+    entry.current = -1;
+    return keepFrames(invalidate, 8000, () => entry.current === null);
   }, [entryKey, invalidate]);
 
   useFrame((state, delta) => {
@@ -374,8 +402,8 @@ function IconModel({
     // Entrance: grows from 88 % and settles from a quarter turn, with a soft
     // overshoot. Only runs for ~0.75 s after a load, then the scene is still.
     if (entry.current !== null) {
-      entry.current = Math.min(1, entry.current + Math.min(delta, 1 / 30) / ENTRY_SECONDS);
-      const t = entry.current;
+      if (entry.current < 0) entry.current = performance.now();
+      const t = Math.min(1, (performance.now() - entry.current) / (ENTRY_SECONDS * 1000));
       const c = 1.4;
       const back = 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
       const out = 1 - Math.pow(1 - t, 3);
@@ -383,6 +411,7 @@ function IconModel({
       group.current.rotation.y = (1 - out) * -0.9;
       if (t >= 1) {
         entry.current = null;
+        onEntryEnd?.();
         group.current.scale.setScalar(0.1);
         group.current.rotation.y = 0;
       }
@@ -629,8 +658,13 @@ function LightRig({ settings, resolution }: { settings: SceneSettings; resolutio
  * Soft area shadow: a ring of randomised shadow-casting lights accumulated over
  * many frames, like a large softbox overhead. Far more natural than a blurred
  * contact shadow; it keeps accumulating while the object moves.
+ *
+ * Memoised on purpose: drei's AccumulativeShadows resets its light map in a
+ * layout effect on *every* render, so any unrelated re-render of the studio
+ * (a toast, a panel animation) restarted the accumulation and flashed the grey
+ * shadow plane for a second. It now re-renders only when its own props change.
  */
-function SoftShadow({
+const SoftShadow = memo(function SoftShadow({
   icon,
   floorY,
   opacity,
@@ -645,9 +679,14 @@ function SoftShadow({
 }) {
   const span = Math.max(icon.size.x, icon.size.y, icon.size.z) * 0.1;
   const rad = (angle * Math.PI) / 180;
+  const shadowKey = `${icon.triangles}-${icon.size.x.toFixed(1)}-${icon.size.z.toFixed(1)}-${live}-${angle}`;
   return (
+    <>
+    {/* With on-demand rendering, drei's self-invalidation can stall mid-way and
+        leave a half-accumulated grey plane: keep frames coming until it settles. */}
+    <KeepRendering key={shadowKey} ms={4500} />
     <AccumulativeShadows
-      key={`${icon.triangles}-${icon.size.x.toFixed(1)}-${icon.size.z.toFixed(1)}-${live}-${angle}`}
+      key={shadowKey}
       temporal
       frames={live ? Infinity : 90}
       blend={live ? 24 : 90}
@@ -671,7 +710,15 @@ function SoftShadow({
         position={[Math.sin(rad) * span * 0.5, span * 1.4, Math.cos(rad) * span * 0.5]}
       />
     </AccumulativeShadows>
+    </>
   );
+});
+
+/** Keeps frames coming for `ms` after mounting (see keepFrames). */
+function KeepRendering({ ms }: { ms: number }) {
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => keepFrames(invalidate, ms), [invalidate, ms]);
+  return null;
 }
 
 function Floor({
@@ -1116,9 +1163,10 @@ export function IconCanvas({
     setSeenEntry(entryKey);
     setEntering(true);
   }
+  // Safety net only: the model reports the end of its entrance itself.
   useEffect(() => {
     if (!entering) return;
-    const timer = window.setTimeout(() => setEntering(false), ENTRY_SECONDS * 1000 + 60);
+    const timer = window.setTimeout(() => setEntering(false), 8000);
     return () => window.clearTimeout(timer);
   }, [entering, entryKey]);
   const budget = qualityBudget[settings.quality];
@@ -1239,7 +1287,13 @@ export function IconCanvas({
       <CameraRig view={settings.view} lens={settings.lens} icon={icon} fitTick={fitTick} />
       <LightRig settings={settings} resolution={budget.env} />
       <StageBackdrop paint={paintStage} paintKey={stageKey} handleRef={stageRef} />
-      <IconModel icon={icon} settings={settings} spinRef={spinRef} entryKey={entryKey} />
+      <IconModel
+        icon={icon}
+        settings={settings}
+        spinRef={spinRef}
+        entryKey={entryKey}
+        onEntryEnd={() => setEntering(false)}
+      />
       <Floor
         icon={icon}
         settings={settings}
