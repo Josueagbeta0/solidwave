@@ -14,7 +14,6 @@ export function Cta() {
           <div className="cta-swirl cta-indigo" />
           <div className="cta-swirl cta-violet" />
           <div className="cta-swirl cta-shadow" />
-          <div className="cta-swirl cta-light" />
           <div className="cta-grain absolute inset-0 opacity-[0.32] mix-blend-overlay" />
           
         </div>
