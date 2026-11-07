@@ -89,21 +89,22 @@ function withTimeout<T>(promise: Promise<T>, ms: number) {
   ]);
 }
 
-/** First H.264 profile the browser can hardware/software encode at this size, or null. */
-async function pickH264Codec(width: number, height: number, fps: number) {
+/**
+ * First H.264 encoder config the browser supports at this size, or null.
+ * "realtime" latency skips the encoder's look-ahead: it is several times
+ * faster per frame, and at this bitrate the loss is invisible.
+ */
+async function pickH264Config(width: number, height: number, fps: number) {
   if (typeof VideoEncoder === "undefined" || typeof VideoFrame === "undefined") return null;
-  for (const codec of ["avc1.640033", "avc1.4d0033", "avc1.42003e"]) {
-    try {
-      const { supported } = await VideoEncoder.isConfigSupported({
-        codec,
-        width,
-        height,
-        bitrate: 18_000_000,
-        framerate: fps,
-      });
-      if (supported) return codec;
-    } catch {
-      /* try the next profile */
+  for (const latencyMode of ["realtime", "quality"] as const) {
+    for (const codec of ["avc1.640033", "avc1.4d0033", "avc1.42003e"]) {
+      const config: VideoEncoderConfig = { codec, width, height, bitrate: 18_000_000, framerate: fps, latencyMode };
+      try {
+        const { supported } = await VideoEncoder.isConfigSupported(config);
+        if (supported) return config;
+      } catch {
+        /* try the next profile */
+      }
     }
   }
   return null;
@@ -857,13 +858,13 @@ function Bridge({
       // Frame-accurate path: WebCodecs H.264 + MP4 muxing. Every frame is rendered
       // and encoded at an exact 1/60 s timestamp, so the loop is perfectly smooth
       // however long each frame takes to render.
-      const codec = await pickH264Codec(width, height, fps);
-      const recorderMime = codec
+      const encoderConfig = await pickH264Config(width, height, fps);
+      const recorderMime = encoderConfig
         ? null
         : ["video/mp4;codecs=avc1.640028", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find(
             (type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type),
           );
-      if (!codec && !recorderMime) throw new Error("This browser cannot record video");
+      if (!encoderConfig && !recorderMime) throw new Error("This browser cannot record video");
 
       // The backdrop never changes during the loop: paint it once.
       const backdrop = document.createElement("canvas");
@@ -910,6 +911,8 @@ function Bridge({
       const renderFrame = (index: number) => {
         spinRef.current = (index / frameCount) * Math.PI * 2;
         advance(start + (index * 1000) / fps);
+        // Let the GPU finish this frame before it is copied, so frames don't pile up behind the encoder.
+        gl.getContext().finish();
         ctx.drawImage(backdrop, 0, 0);
         ctx.drawImage(gl.domElement, 0, 0, width, height, 0, 0, width, height);
       };
@@ -920,7 +923,7 @@ function Bridge({
         // Warm-up frames let soft shadows and reflections settle before recording.
         for (let i = 0; i < 12; i++) renderFrame(0);
 
-        if (codec) {
+        if (encoderConfig) {
           const muxer = new Muxer({
             target: new ArrayBufferTarget(),
             video: { codec: "avc", width, height, frameRate: fps },
@@ -933,7 +936,7 @@ function Bridge({
               failure = error;
             },
           });
-          encoder.configure({ codec, width, height, bitrate: 18_000_000, framerate: fps });
+          encoder.configure(encoderConfig);
           const frameDuration = 1_000_000 / fps;
           // Frame index 0 … n-1: the last frame stops one step short of 360°, so the loop is seamless.
           for (let index = 0; index < frameCount; index++) {
@@ -945,10 +948,15 @@ function Bridge({
             });
             encoder.encode(frame, { keyFrame: index % (fps * 2) === 0 });
             frame.close();
-            onProgress?.((index + 1) / frameCount);
-            // Keep the page responsive and the encoder queue short.
-            while (encoder.encodeQueueSize > 6) await wait(4);
-            if (index % 4 === 0) await wait(0);
+            // Keep the encoder queue short (rendering is far faster than encoding).
+            // A failed encoder never drains its queue: stop waiting on it.
+            while (encoder.encodeQueueSize > 6 && !failure && encoder.state === "configured") await wait(4);
+            // Report progress (and let the page breathe) a few times a second, not
+            // every frame: each update re-renders the whole studio.
+            if (index % 8 === 7 || index === frameCount - 1) {
+              onProgress?.((index + 1) / frameCount);
+              await wait(0);
+            }
           }
           await withTimeout(encoder.flush(), 60_000);
           encoder.close();

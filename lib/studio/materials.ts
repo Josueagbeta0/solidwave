@@ -514,7 +514,7 @@ export const backgroundPresets: BackgroundPreset[] = [
   { id: "midnight", name: "Minuit", center: "#1a2038", edge: "#05060b", dark: true },
   { id: "wave", name: "Néon", center: "#2a2470", edge: "#06061a", dark: true },
   { id: "aurora", name: "Aurora", center: "#0f4a5c", edge: "#050b14", dark: true },
-  { id: "studio", name: "Studio", center: "#f4f5f8", edge: "#c9ced8" },
+  { id: "studio", name: "Studio", center: "#eff1f4", edge: "#b4b9c2" },
   { id: "paper", name: "Papier", center: "#ffffff", edge: "#f2f3f6" },
   { id: "wall", name: "Mur", center: "#eceef2", edge: "#dfe2e7" },
   { id: "azure", name: "Azure", center: "#bcd5fb", edge: "#6ea8f0" },

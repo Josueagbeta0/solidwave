@@ -2,8 +2,8 @@ import * as THREE from "three";
 
 export type Backdrop = { center: string; edge: string };
 
-/** Neutral photo-studio sweep (light). */
-export const WHITE_STUDIO: Backdrop = { center: "#ffffff", edge: "#e4e2de" };
+/** Neutral grey photo-studio sweep: silver and white objects keep their contrast. */
+export const WHITE_STUDIO: Backdrop = { center: "#eff1f4", edge: "#b4b9c2" };
 /** Cool grey studio sweep: clear glass reads as glass here, not as a hole. */
 export const GLASS_STUDIO: Backdrop = { center: "#e8eaef", edge: "#a7aebb" };
 /** Neutral studio at night (dark). */

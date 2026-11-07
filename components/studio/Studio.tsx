@@ -268,24 +268,24 @@ export function Studio() {
   const [finishGroup, setFinishGroup] = useState<FinishGroup>("glass");
   const [material, setMaterial] = useState<MaterialSettings>(() => materialFrom(finishById("chrome")));
 
-  const [backgroundId, setBackgroundId] = useState("white");
+  const [backgroundId, setBackgroundId] = useState("studio");
   const [backgroundMode, setBackgroundMode] = useState<BgMode>("radial");
-  const [bgCenter, setBgCenter] = useState("#ffffff");
-  const [bgEdge, setBgEdge] = useState("#e4e2de");
-  const [vignette, setVignette] = useState(0.08);
+  const [bgCenter, setBgCenter] = useState("#eff1f4");
+  const [bgEdge, setBgEdge] = useState("#b4b9c2");
+  const [vignette, setVignette] = useState(0.22);
   const [halo, setHalo] = useState(0);
   const [autoStage, setAutoStage] = useState(true);
 
   const [rig, setRig] = useState("studio");
   const [lightAngle, setLightAngle] = useState(0);
-  const [studioLight, setStudioLight] = useState(1.4);
+  const [studioLight, setStudioLight] = useState(1);
   const [exposure, setExposure] = useState(1);
   const [floor, setFloor] = useState<FloorMode>("soft");
   const [shadow, setShadow] = useState(0.6);
 
   const [quality, setQuality] = useState<RenderQuality>("high");
   const [toneMap, setToneMap] = useState<ToneMap>("neutral");
-  const [bloom, setBloom] = useState(0.15);
+  const [bloom, setBloom] = useState(0);
   const [aberration, setAberration] = useState(0);
   const [grain, setGrain] = useState(0);
   const [lens, setLens] = useState(28);
@@ -1545,7 +1545,7 @@ export function Studio() {
       <div className="relative flex min-h-0 flex-1">
         {/* Viewport */}
         <main
-          className="relative min-w-0 flex-1 overflow-hidden"
+          className="relative m-3 min-w-0 flex-1 overflow-hidden rounded-[22px] shadow-[inset_0_0_0_1px_rgba(15,17,22,0.06)] max-tab:m-2 max-tab:rounded-[18px] max-fold:m-0 max-fold:rounded-none"
           style={{ background: bgStyle }}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
