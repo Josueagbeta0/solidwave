@@ -252,7 +252,7 @@ export function Studio() {
   /* State                                                             */
   /* ---------------------------------------------------------------- */
   const [tab, setTab] = useState<Tab>("look");
-  const [mode, setMode] = useState<GeometryMode>("extrude");
+  const [mode, setMode] = useState<GeometryMode>("inflate");
   const [edgeProfile, setEdgeProfile] = useState<EdgeProfile>("round");
   const [lookId, setLookId] = useState<string | null>("studio-blanc");
   const [dims, setDims] = useState<Dims>(DEFAULT_DIMS);
@@ -784,7 +784,7 @@ export function Studio() {
 
   const shapePanel = (
     <>
-      <PanelSection title="Volume" onReset={() => setMode("extrude")}>
+      <PanelSection title="Volume" onReset={() => setMode("inflate")}>
         <ChoiceGrid
           ariaLabel="Type de volume"
           columns={4}

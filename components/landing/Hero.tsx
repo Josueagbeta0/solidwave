@@ -5,7 +5,7 @@ import { GithubIcon } from "@/components/icons";
 import { heroStageCss } from "@/lib/stage";
 import { site } from "@/lib/site";
 
-const promises = ["Gratuit, sans compte", "100 % dans le navigateur", "Code ouvert"];
+const promises = ["Gratuit, sans compte", "100 % dans le navigateur", "Open source"];
 
 export function Hero() {
   return (

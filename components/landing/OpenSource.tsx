@@ -15,7 +15,7 @@ export function OpenSource() {
       <Reveal className="panel relative grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-10 overflow-hidden rounded-[30px] p-12 max-tab:grid-cols-1 max-fold:p-7">
         <div aria-hidden="true" className="grid-lines pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(60%_80%_at_0%_0%,#000,transparent)]" />
         <div className="relative">
-          <p className="eyebrow">Code ouvert</p>
+          <p className="eyebrow">Open source</p>
           <h2 id="open-title" className="heading-section mt-5 !text-[clamp(32px,4vw,54px)]">
             Fait à la main, <span className="serif-accent">ouvert</span> à tous.
           </h2>
