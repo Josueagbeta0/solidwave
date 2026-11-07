@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/LogoMark";
 import { usePresence } from "@/components/usePresence";
+import { GithubIcon } from "@/components/icons";
+import { site } from "@/lib/site";
 
 const links = [
   { href: "#how", label: "Fonctionnement" },
@@ -79,6 +81,16 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-1.5">
+            <a
+              href={site.repo}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Code source sur GitHub"
+              title="Code source sur GitHub"
+              className="focus-ring press grid size-10 place-items-center rounded-[14px] text-ink-2 transition-colors duration-200 hover:bg-well-strong hover:text-ink [--press:.92] [--ring-offset:2px] [&_svg]:transition-transform [&_svg]:duration-500 [&_svg]:ease-spring hover:[&_svg]:rotate-[-10deg] hover:[&_svg]:scale-110"
+            >
+              <GithubIcon size={19} />
+            </a>
             <Link
               href="/studio"
               className="focus-ring group/cta inline-flex h-10 items-center gap-1.5 rounded-[14px] bg-primary px-4 text-[14px] font-medium text-primary-foreground press [--press:.96] [--ring-offset:3px]"

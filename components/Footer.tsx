@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { LogoMark, Wordmark } from "@/components/LogoMark";
+import { GithubIcon } from "@/components/icons";
+import { site } from "@/lib/site";
 
 const columns = [
   {
@@ -35,6 +37,15 @@ export function Footer() {
             Des logos plats en entrée, des objets en volume en sortie. Pour les designers qui veulent
             du relief sans ouvrir un logiciel 3D.
           </p>
+          <a
+            href={site.repo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="focus-ring group mt-5 inline-flex items-center gap-2 rounded-[10px] bg-surface px-3 py-2 text-[13px] font-medium text-ink-2 shadow-raise transition-[color,box-shadow] duration-200 hover:text-ink hover:shadow-float [--ring-offset:2px]"
+          >
+            <GithubIcon size={15} className="transition-transform duration-500 ease-spring group-hover:rotate-[-10deg]" />
+            Code source sur GitHub
+          </a>
         </div>
         {columns.map((column) => (
           <div key={column.title}>
@@ -55,7 +66,18 @@ export function Footer() {
         ))}
       </div>
       <div className="frame flex flex-wrap items-center justify-between gap-3 border-t border-hairline py-6 text-[12.5px] text-ink-4">
-        <span>© {new Date().getFullYear()} SolidWave. Tous droits réservés.</span>
+        <span>
+          © {new Date().getFullYear()} SolidWave · Créé par{" "}
+          <a
+            href={site.author.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="focus-ring rounded font-medium text-ink-2 underline decoration-hairline-strong underline-offset-4 transition-colors duration-200 hover:text-accent hover:decoration-accent [--ring-offset:2px]"
+          >
+            {site.author.name}
+          </a>{" "}
+          · Licence MIT
+        </span>
         <span className="font-mono">Rendu dans votre navigateur · Aucun envoi</span>
       </div>
       {/* Oversized wordmark that bleeds off the bottom edge. */}

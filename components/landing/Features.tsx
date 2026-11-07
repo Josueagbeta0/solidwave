@@ -2,6 +2,7 @@ import { Reveal } from "@/components/motion";
 import { looks } from "@/lib/studio/looks";
 import { lightRigs } from "@/lib/studio/lighting";
 import { finishById } from "@/lib/studio/materials";
+import { LOGO_PATHS } from "@/components/LogoMark";
 
 function Tile({
   className = "",
@@ -148,6 +149,59 @@ export function Features() {
               4096
               <span className="ml-1 font-mono text-[15px] font-normal tracking-normal text-ink-4">px</span>
             </span>
+          </div>
+        </Tile>
+
+        {/* Logo colours */}
+        <Tile
+          delay={60}
+          className="col-span-6 max-tab:col-span-2 max-fold:col-span-1"
+          title="Les couleurs de votre logo, en volume"
+          body="Activez « Couleurs du logo » : dégradés, motifs et détails de votre fichier sont reproduits sur l’objet, et chaque tranche prend la couleur du bord."
+        >
+          <div className="flex h-full min-h-[170px] items-center justify-center gap-8 max-fold:gap-4">
+            <svg viewBox="0 6 100 100" className="size-28 rounded-[22px] bg-night p-4 shadow-[inset_0_0_0_1px_var(--color-hairline)] max-fold:size-20" aria-hidden="true">
+              <defs>
+                <linearGradient id="feat-flat" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#ff5a36" />
+                  <stop offset="1" stopColor="#ffc233" />
+                </linearGradient>
+              </defs>
+              {LOGO_PATHS.map((d, index) => (
+                <path key={d} d={d} fill={index === 0 ? "url(#feat-flat)" : "#2f5bff"} />
+              ))}
+            </svg>
+            <span className="flex items-center gap-1 text-ink-4">
+              {[0, 1, 2].map((dot) => (
+                <span
+                  key={dot}
+                  className="size-1.5 rounded-full bg-accent/60 transition-transform duration-500 ease-spring group-hover:translate-x-2"
+                  style={{ transitionDelay: `${dot * 60}ms` }}
+                />
+              ))}
+            </span>
+            <svg viewBox="-4 2 116 112" className="size-36 transition-transform duration-700 ease-spring group-hover:-rotate-3 group-hover:scale-105 max-fold:size-24" aria-hidden="true">
+              <defs>
+                <linearGradient id="feat-face" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#ff6a3d" />
+                  <stop offset="1" stopColor="#ffc233" />
+                </linearGradient>
+              </defs>
+              {Array.from({ length: 10 }, (_, layer) => 10 - layer).map((depth) =>
+                LOGO_PATHS.map((d, index) => (
+                  <path
+                    key={`${depth}-${index}`}
+                    d={d}
+                    transform={`translate(${depth * 0.9} ${depth * 0.75})`}
+                    fill={index === 0 ? "#c2410c" : "#1e3fbf"}
+                  />
+                )),
+              )}
+              {LOGO_PATHS.map((d, index) => (
+                <path key={d} d={d} fill={index === 0 ? "url(#feat-face)" : "#2f5bff"} />
+              ))}
+              <path d={LOGO_PATHS[0]} fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="0.8" />
+            </svg>
           </div>
         </Tile>
 

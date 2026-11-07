@@ -520,3 +520,112 @@
     transform: translateX(-50%);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Landing: "Comment ça marche" pipeline animations                    */
+/* Transform and opacity only (plus a stroke draw), so they stay cheap. */
+/* ------------------------------------------------------------------ */
+
+/* SVG elements scale and rotate around their own centre. */
+.svg-box {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes how-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes how-grow {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: none; }
+}
+
+/* A file card falls into the drop zone, overshoots a little and lands. */
+@keyframes how-drop {
+  0% { opacity: 0; transform: translate(40px, -120px) rotate(-14deg); }
+  55% { opacity: 1; transform: translate(0, 6px) rotate(2deg); }
+  75% { transform: translate(0, -3px) rotate(-1deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* The card dissolves into the flat logo it carried. */
+@keyframes how-absorb {
+  to { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes how-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes how-scan {
+  0% { opacity: 0; transform: translateY(-80px); }
+  15%, 85% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(80px); }
+}
+
+/* Each layer slides back to its depth: var(--i) is the layer index. */
+@keyframes how-extrude {
+  from { transform: none; }
+  to { transform: translate(calc(var(--i) * 1.35px), calc(var(--i) * 1.1px)); }
+}
+
+/* Light sweeping across the front face. */
+@keyframes how-sweep {
+  0% { transform: translateX(-150px) skewX(-20deg); }
+  100% { transform: translateX(170px) skewX(-20deg); }
+}
+
+/* Five finishes take turns on the front face (5 s loop, 1 s each). */
+@keyframes how-cycle {
+  0%, 17% { opacity: 1; }
+  21%, 96% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Export files fly out of the object to their slot. */
+@keyframes how-fly {
+  from { opacity: 0; transform: translate(-90px, 0) scale(0.5); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes how-bar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Step progress in the list. */
+.how-progress {
+  transform-origin: left;
+  animation: how-bar var(--step-ms, 5200ms) linear both;
+}
+
+/* Marquee of uses. */
+.marquee-track {
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* FAQ answers glide open (progressive enhancement where supported). */
+.faq-item::details-content {
+  block-size: 0;
+  overflow: clip;
+  opacity: 0;
+  transition:
+    block-size 0.35s var(--ease-out),
+    opacity 0.25s ease,
+    content-visibility 0.35s allow-discrete;
+}
+.faq-item[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+}

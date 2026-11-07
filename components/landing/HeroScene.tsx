@@ -145,7 +145,7 @@ export function HeroScene() {
       </Canvas>
 
       {/* Controls: shape on the left, finish on the right (stacked on small screens). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 max-tab:flex-col max-tab:items-center">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-4">
         <div role="group" aria-label="Forme" className="glass pointer-events-auto flex items-center gap-0.5 rounded-[16px] p-1">
           {shapeOptions.map((id) => {
             const sample = sampleById(id);
@@ -158,7 +158,7 @@ export function HeroScene() {
                 aria-label={sample.name}
                 title={sample.name}
                 onClick={() => setSampleId(id)}
-                className={`focus-ring grid size-10 place-items-center rounded-[12px] transition-[background-color,color,box-shadow] duration-200 [--ring-offset:2px] ${
+                className={`focus-ring grid size-10 place-items-center rounded-[12px] transition-[background-color,color,box-shadow,scale] duration-300 ease-spring active:scale-90 [--ring-offset:2px] ${
                   active ? "bg-surface text-ink shadow-raise" : "text-ink-3 hover:bg-well-strong hover:text-ink"
                 }`}
               >
@@ -182,16 +182,16 @@ export function HeroScene() {
                 aria-pressed={active}
                 aria-label={option.label}
                 onClick={() => setFinishId(option.id)}
-                className={`focus-ring flex h-10 shrink-0 items-center gap-2 rounded-[12px] pl-1.5 transition-[background-color,padding,box-shadow] duration-300 ease-out [--ring-offset:2px] ${
+                className={`focus-ring group flex h-10 shrink-0 items-center gap-2 rounded-[12px] pl-1.5 transition-[background-color,padding,box-shadow] duration-300 ease-out [--ring-offset:2px] ${
                   active ? "bg-surface pr-3 shadow-raise" : "pr-1.5 hover:bg-well-strong"
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className="block size-7 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,.08),0_2px_6px_-2px_rgba(0,0,0,.3)]"
+                  className="block size-7 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,.08),0_2px_6px_-2px_rgba(0,0,0,.3)] transition-transform duration-300 ease-spring group-hover:scale-110 group-active:scale-90"
                   style={{ background: item.swatch }}
                 />
-                {active && <span className="text-[13px] font-medium text-ink">{option.label}</span>}
+                {active && <span className="animate-pop text-[13px] font-medium text-ink">{option.label}</span>}
               </button>
             );
           })}

@@ -32,8 +32,17 @@ export function Finishes() {
         <div
           role="tablist"
           aria-label="Famille de finitions"
-          className="mt-10 flex rounded-[14px] bg-well-strong p-1"
+          className="relative mt-10 grid grid-cols-4 rounded-[14px] bg-well-strong p-1"
         >
+          {/* The active pill slides between tabs. */}
+          <span
+            aria-hidden="true"
+            className="absolute bottom-1 left-1 top-1 rounded-[11px] bg-surface shadow-raise transition-transform duration-[400ms] ease-spring"
+            style={{
+              width: "calc((100% - 8px) / 4)",
+              transform: `translateX(${groups.findIndex((item) => item.id === group) * 100}%)`,
+            }}
+          />
           {groups.map((item) => (
             <button
               key={item.id}
@@ -41,8 +50,8 @@ export function Finishes() {
               role="tab"
               aria-selected={group === item.id}
               onClick={() => setGroup(item.id)}
-              className={`focus-ring rounded-[11px] px-5 py-2 text-[14px] font-medium transition-[background-color,color,box-shadow] duration-200 [--ring-offset:2px] max-phone:px-3.5 ${
-                group === item.id ? "bg-surface text-ink shadow-raise" : "text-ink-3 hover:text-ink"
+              className={`focus-ring relative z-[1] rounded-[11px] px-5 py-2 text-[14px] font-medium transition-colors duration-200 [--ring-offset:2px] max-phone:px-3 ${
+                group === item.id ? "text-ink" : "text-ink-3 hover:text-ink"
               }`}
             >
               {item.label}
