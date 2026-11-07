@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/LogoMark";
+import { usePresence } from "@/components/usePresence";
 
 const links = [
   { href: "#how", label: "Fonctionnement" },
@@ -33,6 +34,7 @@ export function Header() {
   }, [open]);
 
   const floating = scrolled || open;
+  const menu = usePresence(open, 160);
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-40 pt-3 max-fold:pt-2">
@@ -69,7 +71,7 @@ export function Header() {
               <a
                 key={link.href}
                 href={link.href}
-                className="focus-ring rounded-full px-3.5 py-2 text-[14px] text-ink-3 transition-colors duration-200 hover:text-ink [--ring-offset:2px]"
+                className="focus-ring relative isolate rounded-full px-3.5 py-2 text-[14px] text-ink-3 transition-colors duration-200 before:absolute before:inset-0 before:-z-10 before:scale-90 before:rounded-full before:bg-well-strong before:opacity-0 before:transition-[opacity,scale] before:duration-300 before:ease-spring hover:text-ink hover:before:scale-100 hover:before:opacity-100 [--ring-offset:2px]"
               >
                 {link.label}
               </a>
@@ -94,25 +96,35 @@ export function Header() {
               aria-expanded={open}
               aria-controls="mobile-nav"
               aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-              className="focus-ring hidden size-10 place-items-center rounded-[14px] bg-well-strong text-ink [--ring-offset:2px] max-mid:grid"
+              className="focus-ring press relative hidden size-10 place-items-center rounded-[14px] bg-well-strong text-ink [--press:.92] [--ring-offset:2px] max-mid:grid"
             >
-              {open ? <X size={18} strokeWidth={1.8} /> : <Menu size={18} strokeWidth={1.8} />}
+              {/* Both icons stay mounted and cross-rotate. */}
+              <Menu
+                size={18}
+                strokeWidth={1.8}
+                className={`absolute transition-[opacity,rotate,scale] duration-300 ease-spring ${open ? "rotate-90 scale-50 opacity-0" : ""}`}
+              />
+              <X
+                size={18}
+                strokeWidth={1.8}
+                className={`absolute transition-[opacity,rotate,scale] duration-300 ease-spring ${open ? "" : "-rotate-90 scale-50 opacity-0"}`}
+              />
             </button>
           </div>
         </nav>
 
-        {open && (
+        {menu.mounted && (
           <nav
             id="mobile-nav"
             aria-label="Mobile"
-            className="hidden flex-col border-t border-hairline pb-2 pt-1 max-mid:flex"
+            className={`stagger-links hidden flex-col border-t border-hairline pb-2 pt-1 max-mid:flex ${menu.leaving ? "animate-pop-out" : ""}`}
           >
             {links.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="flex min-h-12 items-center rounded-xl px-3 text-[16px] text-ink-2 hover:bg-well hover:text-ink"
+                className="flex min-h-12 items-center rounded-xl px-3 text-[16px] text-ink-2 transition-[background-color,color,translate] duration-200 hover:translate-x-1 hover:bg-well hover:text-ink"
               >
                 {link.label}
               </a>

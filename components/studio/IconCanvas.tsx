@@ -336,23 +336,57 @@ function CameraRig({
   return null;
 }
 
+/** Length of the entrance played when a new object loads. */
+const ENTRY_SECONDS = 0.75;
+
 function IconModel({
   icon,
   settings,
   spinRef,
+  entryKey,
 }: {
   icon: BuiltIcon | null;
   settings: SceneSettings;
   /** When set, the turntable angle is driven from outside (video recording). */
   spinRef: React.RefObject<number | null>;
+  /** Bumped for each newly loaded object. */
+  entryKey: number;
 }) {
   const group = useRef<THREE.Group>(null);
+  // Entrance progress, 0 → 1; null when idle. Starts on each new object.
+  const entry = useRef<number | null>(null);
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    if (entryKey === 0) return;
+    entry.current = 0;
+    invalidate();
+  }, [entryKey, invalidate]);
 
   useFrame((state, delta) => {
     if (!group.current) return;
     if (spinRef.current !== null) {
+      entry.current = null;
+      group.current.scale.setScalar(0.1);
       group.current.rotation.y = spinRef.current;
       group.current.position.y = 0;
+      return;
+    }
+    // Entrance: grows from 88 % and settles from a quarter turn, with a soft
+    // overshoot. Only runs for ~0.75 s after a load, then the scene is still.
+    if (entry.current !== null) {
+      entry.current = Math.min(1, entry.current + Math.min(delta, 1 / 30) / ENTRY_SECONDS);
+      const t = entry.current;
+      const c = 1.4;
+      const back = 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
+      const out = 1 - Math.pow(1 - t, 3);
+      group.current.scale.setScalar(0.1 * (0.88 + 0.12 * back));
+      group.current.rotation.y = (1 - out) * -0.9;
+      if (t >= 1) {
+        entry.current = null;
+        group.current.scale.setScalar(0.1);
+        group.current.rotation.y = 0;
+      }
+      state.invalidate();
       return;
     }
     const time = state.clock.elapsedTime;
@@ -1053,6 +1087,8 @@ type IconCanvasProps = {
   paintStage?: StagePainter;
   /** Changes whenever the painted stage would look different. */
   stageKey?: string;
+  /** Bumped when a new file or shape loads: the object plays its entrance. */
+  entryKey?: number;
 };
 
 export function IconCanvas({
@@ -1065,12 +1101,26 @@ export function IconCanvas({
   onStats,
   paintStage,
   stageKey,
+  entryKey = 0,
 }: IconCanvasProps) {
   const [artworkTexture, setArtworkTexture] = useState<THREE.Texture | null>(null);
   const composerRef = useRef<EffectComposerImpl | null>(null);
   const stageRef = useRef<StageHandle | null>(null);
   const spinRef = useRef<number | null>(null);
   const [recording, setRecording] = useState(false);
+  // While the entrance plays the soft shadow follows the moving object; when it
+  // ends the shadow re-accumulates once for the resting pose (no smeared shadow).
+  const [entering, setEntering] = useState(false);
+  const [seenEntry, setSeenEntry] = useState(entryKey);
+  if (entryKey !== seenEntry) {
+    setSeenEntry(entryKey);
+    setEntering(true);
+  }
+  useEffect(() => {
+    if (!entering) return;
+    const timer = window.setTimeout(() => setEntering(false), ENTRY_SECONDS * 1000 + 60);
+    return () => window.clearTimeout(timer);
+  }, [entering, entryKey]);
   const budget = qualityBudget[settings.quality];
 
   // The logo's own colours, cropped to the outline of the current object.
@@ -1189,12 +1239,12 @@ export function IconCanvas({
       <CameraRig view={settings.view} lens={settings.lens} icon={icon} fitTick={fitTick} />
       <LightRig settings={settings} resolution={budget.env} />
       <StageBackdrop paint={paintStage} paintKey={stageKey} handleRef={stageRef} />
-      <IconModel icon={icon} settings={settings} spinRef={spinRef} />
+      <IconModel icon={icon} settings={settings} spinRef={spinRef} entryKey={entryKey} />
       <Floor
         icon={icon}
         settings={settings}
         shadowResolution={budget.shadow}
-        live={settings.autoRotate || recording}
+        live={settings.autoRotate || recording || entering}
       />
 
       <OrbitControls

@@ -27,6 +27,7 @@ import {
 import { LogoMark } from "@/components/LogoMark";
 import { SampleIcon } from "@/components/SampleIcon";
 import { IconCanvas } from "@/components/studio/IconCanvas";
+import { usePresence } from "@/components/usePresence";
 import {
   ChoiceGrid,
   ColorField,
@@ -264,6 +265,13 @@ export function Studio() {
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [toastLeaving, setToastLeaving] = useState(false);
+  // Bumped for every newly loaded file or shape: the 3D object plays its entrance.
+  const [entryKey, setEntryKey] = useState(0);
+  // Menus and the inspector play a short exit animation before unmounting.
+  const exportMenu = usePresence(exportOpen, 140);
+  const helpMenu = usePresence(helpOpen, 140);
+  const inspector = usePresence(panelOpen, 180);
   const [toast, setToast] = useState<string | null>(null);
   const [stats, setStats] = useState({ width: 100, height: 100, depth: 14, triangles: 0 });
 
@@ -405,8 +413,12 @@ export function Studio() {
   /* ---------------------------------------------------------------- */
   const notify = useCallback((message: string) => {
     setToast(message);
+    setToastLeaving(false);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
+    toastTimer.current = window.setTimeout(() => {
+      setToastLeaving(true);
+      toastTimer.current = window.setTimeout(() => setToast(null), 180);
+    }, 2600);
   }, []);
 
   useEffect(() => {
@@ -460,6 +472,7 @@ export function Studio() {
         window.setTimeout(() => URL.revokeObjectURL(stale), 1000);
       }
       sourceRef.current = source;
+      setEntryKey((key) => key + 1);
       setTrace(result);
       setFileName(name);
       setFileUrl(url);
@@ -733,7 +746,7 @@ export function Studio() {
               aria-pressed={active}
               title={look.blurb}
               onClick={() => applyLook(look)}
-              className={`focus-ring group flex flex-col rounded-[14px] p-1.5 text-left transition-[background-color,box-shadow] duration-200 [--ring-offset:1px] ${
+              className={`focus-ring group flex flex-col rounded-[14px] p-1.5 text-left transition-[background-color,box-shadow,scale] duration-200 active:scale-[0.97] [--ring-offset:1px] ${
                 active
                   ? "bg-raised shadow-[0_0_0_1px_#2f5bffaa,0_10px_28px_-14px_#2f5bffcc]"
                   : "bg-well shadow-[inset_0_0_0_1px_var(--color-hairline)] hover:bg-well-strong"
@@ -995,13 +1008,15 @@ export function Studio() {
                 type="button"
                 onClick={() => applyFinish(item.id)}
                 aria-pressed={active}
-                className={`focus-ring flex min-h-[78px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1 py-2.5 transition-[background,box-shadow] duration-200 [--ring-offset:1px] ${
+                className={`focus-ring group/sw flex min-h-[78px] flex-col items-center justify-center gap-1.5 rounded-[12px] px-1 py-2.5 transition-[background,box-shadow] duration-200 [--ring-offset:1px] ${
                   active
                     ? "bg-raised shadow-[0_0_0_1px_#2f5bff99,0_6px_20px_-10px_#2f5bffaa]"
                     : "hover:bg-well-strong"
                 }`}
               >
-                <Sphere finish={item} />
+                <span className="transition-[scale,translate] duration-300 ease-spring group-hover/sw:-translate-y-0.5 group-hover/sw:scale-110 group-active/sw:scale-95">
+                  <Sphere finish={item} />
+                </span>
                 <span className="text-center text-[11px] font-medium leading-[1.15] text-ink-2">
                   {item.name}
                 </span>
@@ -1423,8 +1438,9 @@ export function Studio() {
     ? "text-white/70 hover:bg-white/10 hover:text-white"
     : "text-ink-3 hover:bg-well-strong hover:text-ink";
   const overlayActive = darkStage ? "bg-white/15 text-white" : "bg-surface text-ink shadow-raise";
-  const iconButton =
-    "focus-ring press grid size-9 place-items-center rounded-[10px] text-ink-3 hover:bg-well-strong hover:text-ink [--press:.92] [--ring-offset:2px]";
+  // Icons inside buttons nudge on hover: transform only, so it stays on the compositor.
+  const iconNudge = "[&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-spring hover:[&_svg]:scale-110";
+  const iconButton = `focus-ring press grid size-9 place-items-center rounded-[10px] text-ink-3 hover:bg-well-strong hover:text-ink [--press:.92] [--ring-offset:2px] ${iconNudge}`;
   const shortcuts: [string, string][] = [
     ["F", "Recadrer l’objet"],
     ["R", "Rotation automatique"],
@@ -1456,7 +1472,10 @@ export function Studio() {
             onClick={() => fileInputRef.current?.click()}
             className="focus-ring flex min-w-0 items-center gap-2.5 rounded-[10px] py-1 pl-1 pr-2.5 transition-colors duration-150 hover:bg-well-strong [--ring-offset:2px]"
           >
-            <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-surface shadow-raise">
+            <span
+              key={fileUrl ?? "empty"}
+              className="grid size-8 shrink-0 animate-pop place-items-center overflow-hidden rounded-[8px] bg-surface shadow-raise"
+            >
               {fileUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={fileUrl} alt="" className="size-full object-contain p-1" />
@@ -1492,10 +1511,10 @@ export function Studio() {
                 <Keyboard size={17} strokeWidth={1.7} />
               </button>
             </Tip>
-            {helpOpen && (
-              <div className="animate-pop absolute right-0 top-[calc(100%+8px)] z-50 w-[280px] origin-top-right rounded-[16px] bg-surface p-2 shadow-float">
+            {helpMenu.mounted && (
+              <div className={`${helpMenu.leaving ? "animate-pop-out" : "animate-pop"} absolute right-0 top-[calc(100%+8px)] z-50 w-[280px] origin-top-right rounded-[16px] bg-surface p-2 shadow-float`}>
                 <p className="px-2.5 pb-1.5 pt-1 text-[12px] font-semibold text-ink">Raccourcis</p>
-                <ul>
+                <ul className="stagger-links">
                   {shortcuts.map(([key, label]) => (
                     <li
                       key={key}
@@ -1533,7 +1552,7 @@ export function Studio() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="focus-ring press flex h-9 items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium text-ink-2 hover:bg-well-strong hover:text-ink [--ring-offset:2px]"
+            className="focus-ring press flex h-9 items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium text-ink-2 hover:bg-well-strong hover:text-ink [--ring-offset:2px] [&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-spring hover:[&_svg]:-translate-y-0.5"
           >
             <Upload size={15} strokeWidth={1.8} />
             <span className="max-phone:hidden">Importer</span>
@@ -1548,12 +1567,16 @@ export function Studio() {
                 setHelpOpen(false);
               }}
               disabled={!icon || exporting}
-              className="focus-ring press flex h-9 items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-2.5 text-[13px] font-medium text-primary-foreground shadow-[0_6px_16px_-8px_#0c0a0999] hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 [--press:.96] [--ring-offset:3px]"
+              className="focus-ring press group/export flex h-9 items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-2.5 text-[13px] font-medium text-primary-foreground shadow-[0_6px_16px_-8px_#0c0a0999] hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40 [--press:.96] [--ring-offset:3px]"
             >
               {exporting ? (
                 <Loader2 size={14} strokeWidth={2} className="animate-spin" />
               ) : (
-                <Download size={14} strokeWidth={2} />
+                <Download
+                  size={14}
+                  strokeWidth={2}
+                  className="transition-transform duration-300 ease-spring group-hover/export:translate-y-0.5"
+                />
               )}
               Exporter
               <ChevronDown
@@ -1563,8 +1586,8 @@ export function Studio() {
               />
             </button>
 
-            {exportOpen && (
-              <div className="thin-scrollbar animate-pop absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-80px)] w-[340px] origin-top-right overflow-y-auto rounded-[18px] bg-surface p-1.5 shadow-float max-phone:fixed max-phone:inset-x-2 max-phone:top-16 max-phone:w-auto">
+            {exportMenu.mounted && (
+              <div className={`thin-scrollbar ${exportMenu.leaving ? "animate-pop-out" : "animate-pop"} absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-80px)] w-[340px] origin-top-right overflow-y-auto rounded-[18px] bg-surface p-1.5 shadow-float max-phone:fixed max-phone:inset-x-2 max-phone:top-16 max-phone:w-auto`}>
                 <div className="stagger">
                   {/* Image */}
                   <div className="rounded-[13px] p-3">
@@ -1716,6 +1739,7 @@ export function Studio() {
             sizeName={fileName}
             fitTick={fitTick}
             onStats={onStats}
+            entryKey={entryKey}
             stageKey={`${backgroundMode}-${stageCenter}-${stageEdge}-${vignette}-${halo}-${haloColor}`}
             paintStage={(ctx, width, height) =>
               paintStage(ctx, width, height, backgroundMode, stageCenter, stageEdge, vignette, halo, haloColor)
@@ -1817,7 +1841,7 @@ export function Studio() {
                       setView("angle");
                       setFitTick((value) => value + 1);
                     }}
-                    className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${overlayButton}`}
+                    className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${iconNudge} ${overlayButton}`}
                   >
                     <Maximize2 size={15} strokeWidth={1.8} />
                   </button>
@@ -1829,7 +1853,7 @@ export function Studio() {
                     aria-pressed={autoRotate}
                     onClick={() => setAutoRotate((value) => !value)}
                     className={`focus-ring press grid size-8 place-items-center rounded-[9px] [--press:.9] [--ring-offset:1px] ${
-                      autoRotate ? overlayActive : overlayButton
+                      autoRotate ? overlayActive : `${overlayButton} [&_svg]:transition-[rotate] [&_svg]:duration-500 [&_svg]:ease-spring hover:[&_svg]:rotate-90`
                     }`}
                   >
                     <RotateCw size={15} strokeWidth={1.8} className={autoRotate ? "animate-[spin_4s_linear_infinite]" : ""} />
@@ -1977,9 +2001,9 @@ export function Studio() {
         </main>
 
         {/* Inspector */}
-        {panelOpen && (
+        {inspector.mounted && (
           <aside
-            className={`flex w-[348px] shrink-0 animate-[panel-in_.38s_cubic-bezier(0.23,1,0.32,1)_both] flex-col overflow-hidden rounded-[20px] bg-surface shadow-pane transition-[height] duration-300 ease-out max-desk:w-[316px] max-tab:w-auto max-tab:rounded-[18px] max-fold:rounded-none max-fold:rounded-t-[20px] max-fold:shadow-[0_-8px_24px_-16px_#0c0a0940] ${
+            className={`flex w-[348px] shrink-0 ${inspector.leaving ? "animate-panel-out" : "animate-[panel-in_.38s_cubic-bezier(0.23,1,0.32,1)_both]"} flex-col overflow-hidden rounded-[20px] bg-surface shadow-pane transition-[height] duration-300 ease-out max-desk:w-[316px] max-tab:w-auto max-tab:rounded-[18px] max-fold:rounded-none max-fold:rounded-t-[20px] max-fold:shadow-[0_-8px_24px_-16px_#0c0a0940] ${
               sheetExpanded ? "max-tab:h-[70dvh]" : "max-tab:h-[44dvh]"
             }`}
           >
@@ -1990,15 +2014,15 @@ export function Studio() {
                 type="button"
                 onClick={() => setSheetExpanded((value) => !value)}
                 aria-label={sheetExpanded ? "Réduire les réglages" : "Agrandir les réglages"}
-                className="focus-ring flex h-7 w-20 items-center justify-center rounded-full [--ring-offset:0px]"
+                className="focus-ring group/handle flex h-7 w-20 items-center justify-center rounded-full [--ring-offset:0px]"
               >
-                <span className="h-1 w-9 rounded-full bg-hairline-strong" />
+                <span className="h-1 w-9 rounded-full bg-hairline-strong transition-[scale,background-color] duration-300 ease-spring group-hover/handle:scale-x-125 group-hover/handle:bg-ink-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setPanelOpen(false)}
                 aria-label="Masquer les réglages"
-                className="focus-ring grid size-9 place-items-center rounded-full text-ink-3 hover:bg-well-strong hover:text-ink [--ring-offset:0px]"
+                className="focus-ring grid size-9 place-items-center rounded-full text-ink-3 hover:bg-well-strong hover:text-ink [--ring-offset:0px] [&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-spring hover:[&_svg]:translate-y-0.5"
               >
                 <ChevronDown size={18} strokeWidth={1.8} />
               </button>
@@ -2021,12 +2045,12 @@ export function Studio() {
                       aria-selected={active}
                       title={`${item.label} (${index + 1})`}
                       onClick={() => setTab(item.id)}
-                      className={`focus-ring relative z-[1] flex flex-col items-center gap-1 rounded-[11px] py-2 text-[10.5px] font-medium transition-colors duration-200 [--ring-offset:1px] ${
+                      className={`focus-ring group/tab relative z-[1] flex flex-col items-center gap-1 rounded-[11px] py-2 text-[10.5px] font-medium transition-colors duration-200 [--ring-offset:1px] ${
                         active ? "text-ink" : "text-ink-4 hover:text-ink-2"
                       }`}
                     >
                       <span
-                        className={`transition-[color,scale] duration-300 ease-spring ${active ? "scale-110 text-accent" : ""}`}
+                        className={`transition-[color,scale,translate] duration-300 ease-spring group-hover/tab:-translate-y-0.5 group-active/tab:scale-90 ${active ? "scale-110 text-accent" : ""}`}
                       >
                         {item.icon}
                       </span>
@@ -2068,10 +2092,11 @@ export function Studio() {
 
       {toast && (
         <div
+          key={toast}
           role="status"
-          className="animate-pop fixed bottom-6 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-[12px] bg-primary py-2.5 pl-3 pr-4 text-[13px] font-medium text-primary-foreground shadow-float"
+          className={`${toastLeaving ? "animate-toast-out" : "animate-pop"} fixed bottom-6 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-2 rounded-[12px] bg-primary py-2.5 pl-3 pr-4 text-[13px] font-medium text-primary-foreground shadow-float`}
         >
-          <span className="grid size-5 place-items-center rounded-full bg-white/15">
+          <span className="grid size-5 animate-[bump_.4s_.12s_ease-out_both] place-items-center rounded-full bg-white/15">
             <Check size={12} strokeWidth={2.4} />
           </span>
           {toast}
