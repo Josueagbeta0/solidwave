@@ -631,25 +631,42 @@
 }
 
 /* CTA card: grainy light gradient (transform only; reduced motion freezes it globally). */
-.cta-glow {
+/* Each layer is a soft blob placed off-centre on an oversized square; rotating
+   the square sweeps the blob around the card, so the colours visibly mix. */
+.cta-swirl {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 180%;
+  aspect-ratio: 1;
   pointer-events: none;
   will-change: transform;
-  animation: cta-drift 26s ease-in-out infinite alternate;
+  animation: cta-orbit 16s linear infinite;
 }
-.cta-glow-indigo {
-  background:
-    radial-gradient(55% 60% at 78% 22%, #3414f0 0%, #2a10d8 30%, rgba(42, 16, 216, 0.55) 55%, transparent 80%),
-    radial-gradient(60% 55% at 45% 85%, #4a22e8 0%, rgba(74, 34, 232, 0.5) 45%, transparent 75%);
+.cta-indigo {
+  background: radial-gradient(28% 28% at 30% 32%, #3414f0 0%, rgba(52, 20, 240, 0.75) 45%, transparent 100%);
 }
-.cta-glow-light {
-  background: radial-gradient(44% 46% at 84% 92%, #fbf8ff 0%, #d9ccff 22%, rgba(150, 120, 255, 0.55) 48%, transparent 75%);
-  animation-duration: 19s;
-  animation-direction: alternate-reverse;
+.cta-violet {
+  background: radial-gradient(26% 26% at 68% 62%, #5b2cf0 0%, rgba(91, 44, 240, 0.6) 45%, transparent 100%);
+  animation-duration: 21s;
+  animation-direction: reverse;
 }
-@keyframes cta-drift {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-6%, 4%, 0) scale(1.06); }
-  100% { transform: translate3d(5%, -5%, 0) scale(1.02); }
+.cta-shadow {
+  background: radial-gradient(22% 22% at 64% 30%, #020108 0%, rgba(2, 1, 8, 0.7) 45%, transparent 100%);
+  animation-duration: 25s;
+}
+.cta-light {
+  background: radial-gradient(16% 16% at 36% 70%, #fbf8ff 0%, #d9ccff 30%, rgba(150, 120, 255, 0.45) 60%, transparent 100%);
+  animation: cta-orbit-pulse 13s ease-in-out infinite;
+}
+@keyframes cta-orbit {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes cta-orbit-pulse {
+  0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  50% { transform: translate(-50%, -50%) rotate(-180deg) scale(1.25); }
+  100% { transform: translate(-50%, -50%) rotate(-360deg) scale(1); }
 }
 /* Film grain: one static SVG noise tile, no per-frame cost. */
 .cta-grain {

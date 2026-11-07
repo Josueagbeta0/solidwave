@@ -11,8 +11,10 @@ export function Cta() {
           {/* Slowly drifting colour fields that blend into each other: the studio's "magic". */}
           {/* Grainy light gradient: black corner, electric indigo, a white-lavender glow that drifts slowly. */}
           <div className="absolute inset-0 bg-[#05040c]" />
-          <div className="cta-glow cta-glow-indigo absolute inset-[-30%]" />
-          <div className="cta-glow cta-glow-light absolute inset-[-30%]" />
+          <div className="cta-swirl cta-indigo" />
+          <div className="cta-swirl cta-violet" />
+          <div className="cta-swirl cta-shadow" />
+          <div className="cta-swirl cta-light" />
           <div className="cta-grain absolute inset-0 opacity-[0.32] mix-blend-overlay" />
           
         </div>
