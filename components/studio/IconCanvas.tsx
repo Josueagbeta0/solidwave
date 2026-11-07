@@ -1179,7 +1179,8 @@ export function IconCanvas({
     : `full-${outlineKey.toFixed(4)}`;
   useEffect(() => {
     const url = material.artworkUrl;
-    if (!url || !icon) {
+    // Photo objects carry their own texture: nothing to crop or load.
+    if (!url || !icon || icon.photoMap) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clear the texture when the option is turned off
       setArtworkTexture(null);
       return;
@@ -1201,8 +1202,9 @@ export function IconCanvas({
     };
     // The crop is tracked through its key: a rebuilt icon with the same outline keeps the texture.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [material.artworkUrl, cropKey, !!icon]);
+  }, [material.artworkUrl, cropKey, !!icon, !!icon?.photoMap]);
 
+  const photoMap = icon?.photoMap ?? null;
   const threeMaterial = useMemo(
     () =>
       createMaterial(material.finish, {
@@ -1217,7 +1219,7 @@ export function IconCanvas({
         clearcoat: material.clearcoat,
         attenuationColor: material.attenuationColor,
         attenuationDistance: material.attenuationDistance,
-        artworkMap: material.artworkUrl ? artworkTexture : null,
+        artworkMap: material.artworkUrl ? (photoMap ?? artworkTexture) : null,
       }),
     [
       material.finish,
@@ -1234,6 +1236,7 @@ export function IconCanvas({
       material.attenuationDistance,
       material.artworkUrl,
       artworkTexture,
+      photoMap,
     ],
   );
 

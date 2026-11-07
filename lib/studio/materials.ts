@@ -414,6 +414,17 @@ export const finishes: Finish[] = [
 
   // Color
   {
+    // Photo objects: the photo's own colours under soft, matte light.
+    id: "natural",
+    name: "Naturel",
+    group: "color",
+    color: "#f4f4f2",
+    metalness: 0,
+    roughness: 0.72,
+    envMapIntensity: 0.7,
+    swatch: sphere("#ffffff", "#e6e4df", "#9f9c95"),
+  },
+  {
     id: "color",
     name: "Couleur",
     group: "color",

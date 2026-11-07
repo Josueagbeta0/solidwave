@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Aperture,
   Box,
+  Camera,
   Check,
   ChevronDown,
   Clapperboard,
@@ -12,6 +13,7 @@ import {
   ImagePlus,
   Keyboard,
   Loader2,
+  LogOut,
   Maximize2,
   Palette,
   PanelRightClose,
@@ -23,6 +25,8 @@ import {
   Sun,
   Upload,
   Wand2,
+  X,
+  Zap,
 } from "lucide-react";
 import { LogoMark } from "@/components/LogoMark";
 import { SampleIcon } from "@/components/SampleIcon";
@@ -68,6 +72,10 @@ import type {
   VideoAspect,
 } from "@/lib/studio/types";
 import { sampleById, sampleSvg, samples } from "@/lib/samples";
+import { buildPhotoIcon, disposePhotoSource, type PhotoSource } from "@/lib/photo/model";
+import { completeSignIn, readSession, signIn, signOut, type GpuSession } from "@/lib/photo/auth";
+import type { AiStage } from "@/lib/photo/ai";
+import type { LocalStage } from "@/lib/photo/local";
 import {
   defaultTraceOptions,
   loadHtmlImage,
@@ -247,6 +255,115 @@ function NumberField({
   );
 }
 
+type PhotoJob = { engine: "quick" | "ai"; label: string; progress: number | null; startedAt: number };
+type AiNotice = { kind: "quota"; retryAt: number | null } | { kind: "error"; signOut?: boolean };
+
+const quickLabels: Record<LocalStage, string> = {
+  models: "Chargement des outils (une seule fois)",
+  cutout: "Détourage de l’objet",
+  depth: "Estimation du relief",
+  mesh: "Construction du volume",
+};
+const aiLabels: Record<AiStage, string> = {
+  connect: "Connexion au service",
+  queue: "En file d’attente",
+  prepare: "Préparation de la photo",
+  generate: "Génération du modèle 3D",
+  finish: "Finition des textures",
+  download: "Réception du modèle",
+};
+
+/** "2 h 14 min", "12 min", "moins d’une minute". */
+function formatWait(ms: number) {
+  const minutes = Math.ceil(ms / 60000);
+  if (minutes <= 1) return "moins d’une minute";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} h ${String(rest).padStart(2, "0")} min` : `${hours} h`;
+}
+
+/** Progress card for photo jobs; the AI one shows elapsed time against the usual 1–2 minutes. */
+function PhotoJobCard({ job, dark }: { job: PhotoJob; dark: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const elapsed = Math.max(0, Math.round((now - job.startedAt) / 1000));
+  const progress = job.progress ?? (job.engine === "ai" ? Math.min(0.95, elapsed / 110) : null);
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-16 z-30 flex justify-center px-4">
+      <div
+        role="status"
+        className={`animate-pop pointer-events-auto flex w-[300px] flex-col rounded-[18px] p-4 shadow-float ${dark ? "bg-[#16171bee] text-white" : "bg-surface text-ink"}`}
+      >
+        <div className="flex items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+            {job.engine === "ai" ? (
+              <Sparkles size={16} strokeWidth={1.7} className="animate-pulse" />
+            ) : (
+              <Zap size={16} strokeWidth={1.7} className="animate-pulse" />
+            )}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[13.5px] font-medium">{job.label}</span>
+            <span className={`block text-[11.5px] tabular-nums ${dark ? "text-white/55" : "text-ink-3"}`}>
+              {job.engine === "ai" ? `Généralement 1 à 2 minutes · ${elapsed} s` : "Sur votre appareil"}
+            </span>
+          </span>
+        </div>
+        <span className={`mt-3 h-1 w-full overflow-hidden rounded-full ${dark ? "bg-white/10" : "bg-well-strong"}`}>
+          {progress !== null ? (
+            <span
+              className="block h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
+              style={{ width: `${Math.max(4, progress * 100)}%` }}
+            />
+          ) : (
+            <span className="wave-flow block h-full w-full rounded-full" />
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AiNoticeCard({ notice, onRetry, onSignOut }: { notice: AiNotice; onRetry: () => void; onSignOut: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const wait = notice.kind === "quota" && notice.retryAt ? notice.retryAt - now : null;
+  return (
+    <div className="mt-3 rounded-[12px] bg-well p-3 text-[12px] leading-[1.5] text-ink-2 shadow-[inset_0_0_0_1px_var(--color-hairline)]">
+      {notice.kind === "quota" ? (
+        <>
+          <p className="font-medium text-ink">Génération IA momentanément indisponible</p>
+          <p className="mt-0.5 text-ink-3">
+            Votre quota gratuit du jour est épuisé.{" "}
+            {wait !== null && wait > 0 ? `Réessayez dans ${formatWait(wait)}.` : "Réessayez plus tard."} Le mode
+            rapide reste disponible.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="font-medium text-ink">La génération n’a pas abouti</p>
+          <p className="mt-0.5 text-ink-3">Le service est peut-être saturé. Réessayez dans quelques minutes.</p>
+          <div className="mt-2 flex gap-3">
+            <button type="button" onClick={onRetry} className="focus-ring rounded font-medium text-accent hover:underline">
+              Réessayer
+            </button>
+            <button type="button" onClick={onSignOut} className="focus-ring rounded text-ink-3 hover:text-ink">
+              Se reconnecter
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Studio() {
   /* ---------------------------------------------------------------- */
   /* State                                                             */
@@ -287,6 +404,19 @@ export function Studio() {
   const [halo, setHalo] = useState(0);
   const [autoStage, setAutoStage] = useState(true);
   const [logoColors, setLogoColors] = useState(false);
+
+  // Photo → 3D: a quick on-device relief, or a full AI model.
+  const [photo, setPhoto] = useState<{ file: File; url: string; name: string } | null>(null);
+  const [photoSource, setPhotoSource] = useState<PhotoSource | null>(null);
+  const [photoPuff, setPhotoPuff] = useState(55);
+  const [photoDetail, setPhotoDetail] = useState(60);
+  const [photoJob, setPhotoJob] = useState<PhotoJob | null>(null);
+  const [aiNotice, setAiNotice] = useState<AiNotice | null>(null);
+  const [gpuSession, setGpuSession] = useState<GpuSession | null>(null);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [signInPage, setSignInPage] = useState<"working" | "done" | "error" | null>(null);
+  const photoJobId = useRef(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [rig, setRig] = useState("studio");
   const [lightAngle, setLightAngle] = useState(0);
@@ -386,11 +516,22 @@ export function Studio() {
 
   // "Couleurs du logo" (and relief mode) paint the source artwork through the object.
   const renderMaterial = useMemo(
-    () => ({ ...material, artworkUrl: logoColors || mode === "relief" ? fileUrl : null }),
-    [material, mode, fileUrl, logoColors],
+    () => ({
+      ...material,
+      // Photo objects carry their own texture; the flag only says "use it".
+      artworkUrl: photoSource ? (logoColors ? "photo" : null) : logoColors || mode === "relief" ? fileUrl : null,
+    }),
+    [material, mode, fileUrl, logoColors, photoSource],
   );
 
   const icon = useMemo(() => {
+    if (photoSource) {
+      try {
+        return buildPhotoIcon(photoSource, { sizeMm: dims.width, puff: photoPuff / 100, detail: photoDetail / 100 });
+      } catch {
+        return null;
+      }
+    }
     if (!trace) return null;
     return buildIcon(trace, {
       mode,
@@ -401,7 +542,10 @@ export function Studio() {
       quality,
       edgeProfile,
     });
-  }, [trace, mode, dims.width, dims.height, dims.depth, dims.edge, quality, edgeProfile]);
+  }, [trace, mode, dims.width, dims.height, dims.depth, dims.edge, quality, edgeProfile, photoSource, photoPuff, photoDetail]);
+
+  // A replaced photo object frees its texture and source mesh.
+  useEffect(() => () => disposePhotoSource(photoSource), [photoSource]);
 
   useEffect(() => {
     const previous = iconRef.current;
@@ -475,6 +619,11 @@ export function Studio() {
         window.setTimeout(() => URL.revokeObjectURL(stale), 1000);
       }
       sourceRef.current = source;
+      photoJobId.current++;
+      setPhoto(null);
+      setPhotoSource(null);
+      setPhotoJob(null);
+      setAiNotice(null);
       setEntryKey((key) => key + 1);
       setTrace(result);
       setFileName(name);
@@ -573,6 +722,147 @@ export function Studio() {
     },
     [applyFinish, notify, traceOptions, applyResult],
   );
+
+  /* ---------------------------------------------------------------- */
+  /* Photo → 3D                                                        */
+  /* ---------------------------------------------------------------- */
+  const runQuick = useCallback(
+    async (url: string) => {
+      const id = ++photoJobId.current;
+      const startedAt = Date.now();
+      setAiNotice(null);
+      setPhotoJob({ engine: "quick", label: quickLabels.models, progress: null, startedAt });
+      try {
+        const { photoToRelief } = await import("@/lib/photo/local");
+        const result = await photoToRelief(url, (stage, progress) => {
+          if (photoJobId.current !== id) return;
+          setPhotoJob({ engine: "quick", label: quickLabels[stage], progress: progress ?? null, startedAt });
+        });
+        if (photoJobId.current !== id) {
+          result.texture.dispose();
+          return;
+        }
+        setPhotoSource({ kind: "quick", relief: result.relief, texture: result.texture });
+        setEntryKey((key) => key + 1);
+        notify("Relief créé sur votre appareil");
+      } catch {
+        if (photoJobId.current === id) {
+          notify("Objet introuvable sur cette photo. Essayez un sujet bien visible, sur un fond simple.");
+        }
+      } finally {
+        if (photoJobId.current === id) setPhotoJob(null);
+      }
+    },
+    [notify],
+  );
+
+  const runAi = useCallback(
+    async (session: GpuSession) => {
+      if (!photo) return;
+      const id = ++photoJobId.current;
+      const startedAt = Date.now();
+      setAiNotice(null);
+      setPhotoJob({ engine: "ai", label: aiLabels.connect, progress: null, startedAt });
+      const ai = await import("@/lib/photo/ai");
+      try {
+        const model = await ai.photoToModel(photo.file, session.token, (stage, detail) => {
+          if (photoJobId.current !== id) return;
+          const label =
+            stage === "queue" && detail?.position
+              ? `En file d’attente : ${detail.position} avant vous`
+              : aiLabels[stage];
+          setPhotoJob({ engine: "ai", label, progress: null, startedAt });
+        });
+        if (photoJobId.current !== id) {
+          model.geometry.dispose();
+          model.texture?.dispose();
+          return;
+        }
+        setPhotoSource({ kind: "ai", geometry: model.geometry, texture: model.texture });
+        setEntryKey((key) => key + 1);
+        notify("Modèle 3D complet généré");
+      } catch (error) {
+        if (photoJobId.current !== id) return;
+        if (error instanceof ai.QuotaError) {
+          setAiNotice({ kind: "quota", retryAt: error.retryInMs ? Date.now() + error.retryInMs : null });
+        } else {
+          setAiNotice({ kind: "error" });
+        }
+      } finally {
+        if (photoJobId.current === id) setPhotoJob(null);
+      }
+    },
+    [photo, notify],
+  );
+
+  const startAi = () => {
+    const session = readSession();
+    if (session) {
+      setGpuSession(session);
+      runAi(session);
+    } else {
+      setConsentOpen(true);
+    }
+  };
+
+  const confirmSignIn = async () => {
+    try {
+      const session = await signIn();
+      setConsentOpen(false);
+      if (session) {
+        setGpuSession(session);
+        runAi(session);
+      } else {
+        notify("Connexion annulée.");
+      }
+    } catch {
+      notify("Autorisez les fenêtres pop-up pour ce site, puis réessayez.");
+    }
+  };
+
+  const handlePhoto = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
+        notify("Utilisez une photo JPG, PNG ou WebP.");
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const name = file.name || "Photo";
+      setPhoto((previous) => {
+        if (previous) window.setTimeout(() => URL.revokeObjectURL(previous.url), 1000);
+        return { file, url, name };
+      });
+      // A photo replaces the current logo.
+      colourCheck.current++;
+      sourceRef.current = null;
+      setTrace(null);
+      setPhotoSource(null);
+      setFileUrl(url);
+      setFileName(name);
+      setLogoColors(true);
+      applyFinish("natural");
+      setTab("shape");
+      runQuick(url);
+    },
+    [applyFinish, notify, runQuick],
+  );
+
+  // Sign-in popup landing back here (?code=…), or a session kept from earlier.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("code") && params.get("state")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the popup only shows the sign-in outcome
+      setSignInPage("working");
+      completeSignIn()
+        .then((ok) => {
+          setSignInPage(ok ? "done" : "error");
+          if (ok && window.opener) window.setTimeout(() => window.close(), 600);
+        })
+        .catch(() => setSignInPage("error"));
+      return;
+    }
+    setGpuSession(readSession());
+  }, []);
 
   // Re-trace raster sources when the outline settings change.
   useEffect(() => {
@@ -948,6 +1238,132 @@ export function Studio() {
     </>
   );
 
+  const pickEngine = (id: "quick" | "ai") => {
+    if (id === "ai") startAi();
+    else if (photo) runQuick(photo.url);
+  };
+
+  const photoPanel = (
+    <>
+      <PanelSection title="Modèle 3D">
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              {
+                id: "quick",
+                icon: <Zap size={16} strokeWidth={1.8} />,
+                title: "Rapide",
+                text: "Relief de face, sur votre appareil. Illimité.",
+              },
+              {
+                id: "ai",
+                icon: <Sparkles size={16} strokeWidth={1.8} />,
+                title: "IA 360°",
+                text: "Objet complet, tous les angles. Quelques essais par jour.",
+              },
+            ] as const
+          ).map((engine) => {
+            const active = photoSource?.kind === engine.id;
+            const running = photoJob?.engine === engine.id;
+            return (
+              <button
+                key={engine.id}
+                type="button"
+                aria-pressed={active}
+                disabled={!photo || !!photoJob}
+                onClick={() => pickEngine(engine.id)}
+                className={`focus-ring press flex flex-col items-start gap-1.5 rounded-[14px] p-3 text-left transition-[box-shadow,background-color] duration-300 disabled:cursor-not-allowed [--press:.97] [--ring-offset:2px] ${
+                  active
+                    ? "bg-accent-soft shadow-[0_0_0_1.5px_var(--color-accent)]"
+                    : "bg-well shadow-[inset_0_0_0_1px_var(--color-hairline)] hover:bg-well-strong"
+                } ${photoJob && !running ? "opacity-50" : ""}`}
+              >
+                <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${active ? "text-accent" : "text-ink"}`}>
+                  {running ? <Loader2 size={16} strokeWidth={1.8} className="animate-spin" /> : engine.icon}
+                  {engine.title}
+                </span>
+                <span className="text-[11.5px] leading-[1.4] text-ink-3">{engine.text}</span>
+              </button>
+            );
+          })}
+        </div>
+        {aiNotice && (
+          <AiNoticeCard
+            notice={aiNotice}
+            onRetry={startAi}
+            onSignOut={() => {
+              signOut();
+              setGpuSession(null);
+              setAiNotice(null);
+              setConsentOpen(true);
+            }}
+          />
+        )}
+        {gpuSession && (
+          <p className="mt-3 flex items-center justify-between gap-2 text-[11.5px] text-ink-3">
+            <span className="truncate">
+              Service de calcul : connecté{gpuSession.name ? ` (${gpuSession.name})` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                signOut();
+                setGpuSession(null);
+              }}
+              className="focus-ring flex shrink-0 items-center gap-1 rounded hover:text-ink"
+            >
+              <LogOut size={12} strokeWidth={1.8} />
+              Déconnexion
+            </button>
+          </p>
+        )}
+      </PanelSection>
+
+      <PanelSection title="Dimensions">
+        <Slider
+          label="Taille"
+          value={dims.width}
+          min={10}
+          max={500}
+          step={1}
+          unit=" mm"
+          defaultValue={DEFAULT_DIMS.width}
+          onChange={(width) => setDims((current) => ({ ...current, width }))}
+          description="Le plus grand côté de l’objet, vu de face."
+        />
+      </PanelSection>
+
+      {photoSource?.kind === "quick" && (
+        <PanelSection title="Relief">
+          <Slider
+            label="Gonflement"
+            value={photoPuff}
+            min={0}
+            max={100}
+            step={1}
+            unit=" %"
+            defaultValue={55}
+            onChange={setPhotoPuff}
+            description="Arrondit le corps de l’objet depuis ses bords."
+          />
+          <div className="mt-3">
+            <Slider
+              label="Détails de la photo"
+              value={photoDetail}
+              min={0}
+              max={100}
+              step={1}
+              unit=" %"
+              defaultValue={60}
+              onChange={setPhotoDetail}
+              description="Creux et bosses lus dans la photo, sur la face avant."
+            />
+          </div>
+        </PanelSection>
+      )}
+    </>
+  );
+
   const materialPanel = (
     <>
       <section className="px-4 pb-1 pt-3">
@@ -955,7 +1371,7 @@ export function Studio() {
           type="button"
           role="switch"
           aria-checked={logoColors}
-          disabled={!trace}
+          disabled={!trace && !photoSource}
           onClick={() => setLogoColors((value) => !value)}
           className={`focus-ring group/logo relative flex w-full items-center gap-3 overflow-hidden rounded-[14px] p-2.5 text-left transition-[box-shadow,background-color] duration-300 disabled:cursor-not-allowed disabled:opacity-50 [--ring-offset:2px] ${
             logoColors
@@ -976,7 +1392,9 @@ export function Studio() {
             )}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[13px] font-semibold text-ink">Couleurs du logo</span>
+            <span className="block text-[13px] font-semibold text-ink">
+              {photo ? "Couleurs de la photo" : "Couleurs du logo"}
+            </span>
             <span className="block text-[11.5px] leading-[1.35] text-ink-3">
               {logoColors ? "Motifs et couleurs de votre fichier, en volume." : "Garder les couleurs et motifs du fichier."}
             </span>
@@ -1464,6 +1882,33 @@ export function Studio() {
     ["Échap", "Fermer un menu"],
   ];
 
+  // Inside the sign-in popup: only the outcome, then it closes itself.
+  if (signInPage) {
+    return (
+      <div className="grid h-dvh place-items-center bg-shell p-6 text-center text-ink">
+        <div className="flex max-w-[320px] flex-col items-center">
+          <span className="grid size-12 place-items-center rounded-full bg-accent-soft text-accent">
+            {signInPage === "working" ? (
+              <Loader2 size={20} strokeWidth={1.8} className="animate-spin" />
+            ) : signInPage === "done" ? (
+              <Check size={20} strokeWidth={2} />
+            ) : (
+              <X size={20} strokeWidth={2} />
+            )}
+          </span>
+          <p className="mt-4 text-[16px] font-semibold">
+            {signInPage === "working" ? "Connexion…" : signInPage === "done" ? "Connecté" : "La connexion a échoué"}
+          </p>
+          <p className="mt-1.5 text-[13px] leading-[1.55] text-ink-3">
+            {signInPage === "error"
+              ? "Fermez cette fenêtre et réessayez depuis le studio."
+              : "Cette fenêtre va se fermer, la génération démarre dans le studio."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-shell text-ink">
       {/* Top bar */}
@@ -1498,10 +1943,10 @@ export function Studio() {
             </span>
             <span className="min-w-0 text-left">
               <span className="block max-w-[220px] truncate text-[13px] font-medium text-ink">
-                {trace ? fileName : "Aucun fichier"}
+                {icon || photo ? fileName : "Aucun fichier"}
               </span>
               <span className="block truncate font-mono text-[10.5px] text-ink-4">
-                {trace ? `${stats.triangles.toLocaleString("fr-FR")} triangles` : "SVG · PNG · JPG · WebP"}
+                {icon ? `${stats.triangles.toLocaleString("fr-FR")} triangles` : photo ? "Photo" : "SVG · PNG · JPG · WebP"}
               </span>
             </span>
           </button>
@@ -1570,6 +2015,18 @@ export function Studio() {
             <Upload size={15} strokeWidth={1.8} />
             <span className="max-phone:hidden">Importer</span>
           </button>
+          <Tip label="Transformer la photo d’un objet en 3D" side="bottom">
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className={`focus-ring press flex h-9 items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium hover:bg-well-strong hover:text-ink [--ring-offset:2px] ${
+                photo ? "bg-accent-soft text-accent" : "text-ink-2"
+              }`}
+            >
+              <Camera size={15} strokeWidth={1.8} />
+              <span className="max-phone:hidden">Photo</span>
+            </button>
+          </Tip>
 
           <div className="relative" data-popover>
             <button
@@ -1731,14 +2188,14 @@ export function Studio() {
           onDrop={(event) => {
             event.preventDefault();
             const file = event.dataTransfer.files?.[0];
-            if (file) handleFile(file);
+            if (file) (photo ? handlePhoto : handleFile)(file);
           }}
         >
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 transition-opacity duration-500"
             style={{
-              opacity: trace ? halo : 0,
+              opacity: icon ? halo : 0,
               background: `radial-gradient(38% 34% at 50% 50%, ${haloColor}8c, transparent 72%)`,
               filter: "blur(30px)",
             }}
@@ -1760,7 +2217,7 @@ export function Studio() {
           />
 
           {/* Dimensions readout */}
-          {trace && (
+          {icon && (
             <div
               className={`animate-float-in pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-3 rounded-[10px] px-3 py-2 font-mono text-[11px] max-tab:left-3 max-tab:top-3 max-phone:hidden ${overlay}`}
             >
@@ -1781,7 +2238,7 @@ export function Studio() {
           )}
 
           {/* Finish dock */}
-          {trace && (
+          {icon && (
             <div className="absolute right-4 top-1/2 z-10 -translate-y-1/2 max-tab:hidden [@media(max-height:620px)]:hidden">
               <div
                 role="group"
@@ -1817,7 +2274,7 @@ export function Studio() {
           )}
 
           {/* Camera toolbar */}
-          {trace && (
+          {icon && (
             <div
               className={`pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-3 max-tab:bottom-3 ${
                 panelOpen && sheetExpanded ? "max-tab:hidden" : ""
@@ -1889,7 +2346,7 @@ export function Studio() {
                     </span>
                   </button>
                 </Tip>
-                <Tip label={logoColors ? "Couleurs du logo : activées" : "Couleurs du logo"}>
+                <Tip label={`${photo ? "Couleurs de la photo" : "Couleurs du logo"}${logoColors ? " : activées" : ""}`}>
                   <button
                     type="button"
                     aria-label="Couleurs du logo"
@@ -1919,7 +2376,7 @@ export function Studio() {
           )}
 
           {/* Empty state */}
-          {!trace && !busy && (
+          {!icon && !photo && !busy && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
               <button
                 type="button"
@@ -1989,8 +2446,32 @@ export function Studio() {
                 <Wand2 size={13} strokeWidth={1.8} />
                 Essayer avec le logo SolidWave
               </button>
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className={`focus-ring group/photo animate-rise delay-3 mt-7 flex w-full max-w-[520px] items-center gap-3.5 rounded-[18px] p-3 pr-4 text-left transition-[translate,box-shadow,background-color] duration-300 ease-spring hover:-translate-y-0.5 [--ring-offset:3px] ${
+                  darkStage
+                    ? "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/10"
+                    : "bg-white/80 shadow-raise hover:shadow-float"
+                }`}
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-accent text-white shadow-[0_8px_20px_-10px_#2f5bff]">
+                  <Camera size={19} strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`flex items-center gap-2 text-[14px] font-semibold ${darkStage ? "text-white" : "text-ink"}`}>
+                    Ou partez d’une photo
+                    <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10.5px] font-semibold text-accent">Nouveau</span>
+                  </span>
+                  <span className={`block text-[12.5px] leading-[1.45] ${darkStage ? "text-white/55" : "text-ink-3"}`}>
+                    Un vêtement, une voiture, un animal : l’objet de la photo devient un modèle 3D.
+                  </span>
+                </span>
+              </button>
             </div>
           )}
+
+          {photoJob && <PhotoJobCard job={photoJob} dark={darkStage} />}
 
           {(busy || exporting) && (
             <div className="absolute inset-0 z-30 grid animate-[panel-in_.25s_ease-out_both] place-items-center bg-black/15 backdrop-blur-[3px]">
@@ -2026,7 +2507,7 @@ export function Studio() {
             </div>
           )}
 
-          {!panelOpen && trace && (
+          {!panelOpen && icon && (
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
@@ -2106,13 +2587,89 @@ export function Studio() {
             >
               <div key={tab} className="stagger">
                 {tab === "look" && lookPanel}
-                {tab === "shape" && shapePanel}
+                {tab === "shape" && (photo ? photoPanel : shapePanel)}
                 {tab === "material" && materialPanel}
                 {tab === "light" && lightPanel}
                 {tab === "render" && renderPanel}
               </div>
             </div>
           </aside>
+        )}
+
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) handlePhoto(file);
+            event.target.value = "";
+          }}
+        />
+        {consentOpen && (
+          <div
+            className="fixed inset-0 z-[60] grid animate-[panel-in_.2s_ease-out_both] place-items-center bg-black/30 p-4 backdrop-blur-[2px]"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setConsentOpen(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="consent-title"
+              className="animate-pop relative w-full max-w-[420px] rounded-[22px] bg-surface p-6 shadow-float"
+            >
+              <button
+                type="button"
+                aria-label="Fermer"
+                onClick={() => setConsentOpen(false)}
+                className={`${iconButton} absolute right-3 top-3`}
+              >
+                <X size={16} strokeWidth={1.8} />
+              </button>
+              <span className="grid size-11 place-items-center rounded-full bg-accent-soft text-accent">
+                <Sparkles size={19} strokeWidth={1.7} />
+              </span>
+              <h2 id="consent-title" className="mt-4 text-[19px] font-semibold tracking-[-0.03em] text-ink">
+                Générer l’objet complet, en 360°
+              </h2>
+              <p className="mt-2 text-[13.5px] leading-[1.6] text-ink-3">
+                Ce mode utilise un service de calcul externe, gratuit. Votre photo lui est envoyée le temps de la
+                génération (1 à 2 minutes).
+              </p>
+              <ul className="mt-3 space-y-1.5 text-[13px] leading-[1.5] text-ink-2">
+                <li className="flex gap-2">
+                  <Check size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-accent" />
+                  Connectez-vous une fois avec un compte gratuit sur ce service.
+                </li>
+                <li className="flex gap-2">
+                  <Check size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-accent" />
+                  Quelques générations par jour, offertes par le service.
+                </li>
+                <li className="flex gap-2">
+                  <Check size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-accent" />
+                  Le mode rapide, lui, reste illimité et sur votre appareil.
+                </li>
+              </ul>
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConsentOpen(false)}
+                  className="focus-ring press h-10 rounded-[11px] px-4 text-[13.5px] font-medium text-ink-2 hover:bg-well-strong [--ring-offset:2px]"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmSignIn}
+                  className="focus-ring press h-10 rounded-[11px] bg-primary px-4 text-[13.5px] font-medium text-primary-foreground hover:bg-ink-2 [--ring-offset:3px]"
+                >
+                  Se connecter et générer
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <input
