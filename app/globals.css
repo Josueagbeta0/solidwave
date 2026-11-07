@@ -629,3 +629,20 @@
     interpolate-size: allow-keywords;
   }
 }
+
+/* CTA card: drifting colour fields (transform only; reduced motion freezes them globally). */
+.aurora-blob {
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+  animation: aurora-drift 20s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes aurora-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate3d(18%, 12%, 0) scale(1.18) rotate(40deg); }
+  66% { transform: translate3d(-14%, 20%, 0) scale(0.9) rotate(-30deg); }
+  100% { transform: translate3d(10%, -16%, 0) scale(1.1) rotate(20deg); }
+}

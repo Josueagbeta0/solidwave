@@ -329,12 +329,12 @@ function PhotoJobCard({ job, dark }: { job: PhotoJob; dark: boolean }) {
 }
 
 /** Marks what arrived with version 2.0. */
-function NewBadge({ className = "" }: { className?: string }) {
+function NewBadge({ className = "", label = "Nouveau" }: { className?: string; label?: string }) {
   return (
     <span
       className={`rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em] text-accent ${className}`}
     >
-      Nouveau
+      {label}
     </span>
   );
 }
@@ -1270,6 +1270,15 @@ export function Studio() {
   const photoPanel = (
     <>
       <PanelSection title="Modèle 3D">
+        <div className="mb-3 rounded-[12px] bg-well p-3 text-[12px] leading-[1.5] text-ink-3 shadow-[inset_0_0_0_1px_var(--color-hairline)]">
+          <p className="flex items-center gap-2 font-medium text-ink">
+            Photo vers 3D <NewBadge label="Bêta" />
+          </p>
+          <p className="mt-1">
+            Fonction encore en amélioration. Pour un rendu soigné, utilisez l’IA 360° ; le mode Rapide reste
+            basique. Conseil : un seul objet, entier, net, sur un fond uni.
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {(
             [
@@ -1277,13 +1286,13 @@ export function Studio() {
                 id: "quick",
                 icon: <Zap size={16} strokeWidth={1.8} />,
                 title: "Rapide",
-                text: "Relief de face, sur votre appareil. Illimité.",
+                text: "Relief simple, correct de face seulement. Sur votre appareil, illimité.",
               },
               {
                 id: "ai",
                 icon: <Sparkles size={16} strokeWidth={1.8} />,
                 title: "IA 360°",
-                text: "Objet complet, tous les angles. Quelques essais par jour.",
+                text: "Meilleur rendu : l’objet complet, sous tous les angles. Quelques essais par jour.",
               },
             ] as const
           ).map((engine) => {
@@ -1305,7 +1314,7 @@ export function Studio() {
                 <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${active ? "text-accent" : "text-ink"}`}>
                   {running ? <Loader2 size={16} strokeWidth={1.8} className="animate-spin" /> : engine.icon}
                   {engine.title}
-                  {engine.id === "ai" && !active && <NewBadge />}
+                  {engine.id === "ai" && <NewBadge label="Conseillé" />}
                 </span>
                 <span className="text-[11.5px] leading-[1.4] text-ink-3">{engine.text}</span>
               </button>
@@ -2050,7 +2059,7 @@ export function Studio() {
             >
               <Camera size={15} strokeWidth={1.8} />
               <span className="max-phone:hidden">Photo</span>
-              {!photo && <NewBadge className="max-fold:hidden" />}
+              <NewBadge label="Bêta" className="max-fold:hidden" />
             </button>
           </Tip>
 
@@ -2453,7 +2462,7 @@ export function Studio() {
                     <span className="min-w-0">
                       <span className={`flex items-center gap-2 text-[15px] font-semibold ${darkStage ? "text-white" : "text-ink"}`}>
                         {choice.title}
-                        {choice.fresh && <NewBadge />}
+                        {choice.fresh && <NewBadge label="Bêta" />}
                       </span>
                       <span className={`mt-1 block text-[12.5px] leading-[1.45] ${darkStage ? "text-white/55" : "text-ink-3"}`}>
                         {choice.text}
