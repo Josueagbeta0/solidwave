@@ -328,6 +328,17 @@ function PhotoJobCard({ job, dark }: { job: PhotoJob; dark: boolean }) {
   );
 }
 
+/** Marks what arrived with version 2.0. */
+function NewBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`rounded-full bg-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em] text-accent ${className}`}
+    >
+      Nouveau
+    </span>
+  );
+}
+
 function AiNoticeCard({ notice, onRetry, onSignOut }: { notice: AiNotice; onRetry: () => void; onSignOut: () => void }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -416,6 +427,8 @@ export function Studio() {
   const [consentOpen, setConsentOpen] = useState(false);
   const [signInPage, setSignInPage] = useState<"working" | "done" | "error" | null>(null);
   const photoJobId = useRef(0);
+  const [signingIn, setSigningIn] = useState(false);
+  const signInAbort = useRef<AbortController | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [rig, setRig] = useState("studio");
@@ -806,18 +819,28 @@ export function Studio() {
   };
 
   const confirmSignIn = async () => {
+    signInAbort.current?.abort();
+    const controller = new AbortController();
+    signInAbort.current = controller;
+    setSigningIn(true);
     try {
-      const session = await signIn();
+      const session = await signIn(controller.signal);
+      if (controller.signal.aborted) return;
       setConsentOpen(false);
       if (session) {
         setGpuSession(session);
         runAi(session);
-      } else {
-        notify("Connexion annulée.");
       }
     } catch {
       notify("Autorisez les fenêtres pop-up pour ce site, puis réessayez.");
+    } finally {
+      if (signInAbort.current === controller) setSigningIn(false);
     }
+  };
+  const closeConsent = () => {
+    signInAbort.current?.abort();
+    setSigningIn(false);
+    setConsentOpen(false);
   };
 
   const handlePhoto = useCallback(
@@ -856,7 +879,8 @@ export function Studio() {
       completeSignIn()
         .then((ok) => {
           setSignInPage(ok ? "done" : "error");
-          if (ok && window.opener) window.setTimeout(() => window.close(), 600);
+          // Opened by script, so it may close itself even though the provider cut `window.opener`.
+          if (ok) window.setTimeout(() => window.close(), 600);
         })
         .catch(() => setSignInPage("error"));
       return;
@@ -1281,6 +1305,7 @@ export function Studio() {
                 <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${active ? "text-accent" : "text-ink"}`}>
                   {running ? <Loader2 size={16} strokeWidth={1.8} className="animate-spin" /> : engine.icon}
                   {engine.title}
+                  {engine.id === "ai" && !active && <NewBadge />}
                 </span>
                 <span className="text-[11.5px] leading-[1.4] text-ink-3">{engine.text}</span>
               </button>
@@ -1919,7 +1944,7 @@ export function Studio() {
           className="focus-ring group flex items-center gap-2 rounded-[10px] pr-1 [--ring-offset:4px]"
         >
           <LogoMark size={26} gradient className="transition-transform duration-500 ease-spring group-hover:-rotate-6" />
-          <span className="text-[15px] font-semibold tracking-[-0.04em]">SolidWave</span>
+          <span className="text-[15px] font-semibold tracking-[-0.04em]">SolidWave<span className="ml-1 inline-block translate-y-[-1px] rounded-full bg-accent-soft px-1.5 py-px align-middle font-mono text-[0.62em] font-semibold tracking-normal text-accent">2.0</span></span>
         </Link>
         <span className="mx-1.5 h-5 w-px bg-hairline-strong max-fold:hidden" />
 
@@ -2025,6 +2050,7 @@ export function Studio() {
             >
               <Camera size={15} strokeWidth={1.8} />
               <span className="max-phone:hidden">Photo</span>
+              {!photo && <NewBadge className="max-fold:hidden" />}
             </button>
           </Tip>
 
@@ -2378,44 +2404,66 @@ export function Studio() {
           {/* Empty state */}
           {!icon && !photo && !busy && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className={`focus-ring group animate-rise flex w-full max-w-[520px] flex-col items-center rounded-[28px] border border-dashed px-8 py-11 transition-[border-color,background-color] duration-300 [--ring-offset:4px] max-phone:px-5 max-phone:py-8 ${
-                  darkStage
-                    ? "border-white/15 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.06]"
-                    : "border-black/15 bg-white/60 hover:border-accent/40 hover:bg-white/80"
+              <span className="animate-rise mb-5 grid size-14 place-items-center rounded-[18px] bg-white shadow-float">
+                <LogoMark size={30} gradient />
+              </span>
+              <h2
+                className={`animate-rise text-[clamp(26px,3vw,36px)] font-semibold leading-[1.05] tracking-[-0.045em] ${
+                  darkStage ? "text-white" : "text-ink"
                 }`}
               >
-                <span className="mb-6 grid size-16 place-items-center rounded-[20px] bg-white shadow-float transition-transform duration-500 ease-spring group-hover:-translate-y-1 group-hover:rotate-3">
-                  <LogoMark size={34} gradient />
-                </span>
-                <span
-                  className={`text-[clamp(26px,3vw,36px)] font-semibold leading-[1.05] tracking-[-0.045em] ${
-                    darkStage ? "text-white" : "text-ink"
-                  }`}
-                >
-                  Déposez un logo pour le rendre <span className="serif-accent">solide</span>
-                </span>
-                <span
-                  className={`mt-3 max-w-[42ch] text-[14px] leading-[1.6] [text-wrap:pretty] ${
-                    darkStage ? "text-white/55" : "text-ink-3"
-                  }`}
-                >
-                  SVG, PNG, JPG ou WebP. Vous pouvez aussi coller une image. Rien n’est envoyé : tout
-                  se passe sur votre machine.
-                </span>
-                <span
-                  className={`mt-7 inline-flex h-11 items-center gap-2 rounded-[12px] px-5 text-[14px] font-medium transition-transform duration-300 ease-spring group-hover:scale-[1.03] ${
-                    darkStage ? "bg-white text-ink" : "bg-primary text-primary-foreground"
-                  }`}
-                >
-                  <Upload size={16} strokeWidth={2} />
-                  Choisir un fichier
-                </span>
-              </button>
+                Que voulez-vous rendre <span className="serif-accent">solide</span> ?
+              </h2>
+              <div className="animate-rise delay-1 mt-7 grid w-full max-w-[560px] grid-cols-2 gap-3 max-phone:grid-cols-1">
+                {(
+                  [
+                    {
+                      key: "logo",
+                      icon: <Upload size={19} strokeWidth={1.8} />,
+                      title: "Un logo",
+                      text: "SVG, PNG, JPG ou WebP. Tout reste sur votre appareil.",
+                      fresh: false,
+                    },
+                    {
+                      key: "photo",
+                      icon: <Camera size={19} strokeWidth={1.8} />,
+                      title: "La photo d’un objet",
+                      text: "Vêtement, voiture, animal… En relief, ou à 360° par IA.",
+                      fresh: true,
+                    },
+                  ] as const
+                ).map((choice) => (
+                  <button
+                    key={choice.key}
+                    type="button"
+                    onClick={() => (choice.key === "photo" ? photoInputRef : fileInputRef).current?.click()}
+                    className={`focus-ring group flex flex-col items-start gap-3 rounded-[20px] p-5 text-left transition-[translate,box-shadow,background-color] duration-300 ease-spring hover:-translate-y-0.5 [--ring-offset:3px] max-phone:flex-row max-phone:items-center max-phone:p-4 ${
+                      darkStage
+                        ? "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/10"
+                        : "bg-white/85 shadow-raise hover:shadow-float"
+                    }`}
+                  >
+                    <span
+                      className={`grid size-11 shrink-0 place-items-center rounded-[13px] transition-transform duration-500 ease-spring group-hover:-rotate-6 ${
+                        choice.fresh ? "bg-accent text-white" : darkStage ? "bg-white text-ink" : "bg-primary text-primary-foreground"
+                      }`}
+                    >
+                      {choice.icon}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`flex items-center gap-2 text-[15px] font-semibold ${darkStage ? "text-white" : "text-ink"}`}>
+                        {choice.title}
+                        {choice.fresh && <NewBadge />}
+                      </span>
+                      <span className={`mt-1 block text-[12.5px] leading-[1.45] ${darkStage ? "text-white/55" : "text-ink-3"}`}>
+                        {choice.text}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-              <p className={`eyebrow animate-rise delay-1 mt-9 ${darkStage ? "!text-white/45" : ""}`}>
+                            <p className={`eyebrow animate-rise delay-1 mt-9 ${darkStage ? "!text-white/45" : ""}`}>
                 Ou partir d’une forme
               </p>
               <div className="animate-rise delay-2 mt-3 flex max-w-[520px] flex-wrap items-center justify-center gap-1.5">
@@ -2445,28 +2493,6 @@ export function Studio() {
               >
                 <Wand2 size={13} strokeWidth={1.8} />
                 Essayer avec le logo SolidWave
-              </button>
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                className={`focus-ring group/photo animate-rise delay-3 mt-7 flex w-full max-w-[520px] items-center gap-3.5 rounded-[18px] p-3 pr-4 text-left transition-[translate,box-shadow,background-color] duration-300 ease-spring hover:-translate-y-0.5 [--ring-offset:3px] ${
-                  darkStage
-                    ? "bg-white/[0.06] shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)] hover:bg-white/10"
-                    : "bg-white/80 shadow-raise hover:shadow-float"
-                }`}
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-accent text-white shadow-[0_8px_20px_-10px_#2f5bff]">
-                  <Camera size={19} strokeWidth={1.8} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className={`flex items-center gap-2 text-[14px] font-semibold ${darkStage ? "text-white" : "text-ink"}`}>
-                    Ou partez d’une photo
-                    <span className="rounded-full bg-accent-soft px-1.5 py-px text-[10.5px] font-semibold text-accent">Nouveau</span>
-                  </span>
-                  <span className={`block text-[12.5px] leading-[1.45] ${darkStage ? "text-white/55" : "text-ink-3"}`}>
-                    Un vêtement, une voiture, un animal : l’objet de la photo devient un modèle 3D.
-                  </span>
-                </span>
               </button>
             </div>
           )}
@@ -2611,7 +2637,7 @@ export function Studio() {
           <div
             className="fixed inset-0 z-[60] grid animate-[panel-in_.2s_ease-out_both] place-items-center bg-black/30 p-4 backdrop-blur-[2px]"
             onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setConsentOpen(false);
+              if (event.target === event.currentTarget) closeConsent();
             }}
           >
             <div
@@ -2623,7 +2649,7 @@ export function Studio() {
               <button
                 type="button"
                 aria-label="Fermer"
-                onClick={() => setConsentOpen(false)}
+                onClick={closeConsent}
                 className={`${iconButton} absolute right-3 top-3`}
               >
                 <X size={16} strokeWidth={1.8} />
@@ -2655,7 +2681,7 @@ export function Studio() {
               <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setConsentOpen(false)}
+                  onClick={closeConsent}
                   className="focus-ring press h-10 rounded-[11px] px-4 text-[13.5px] font-medium text-ink-2 hover:bg-well-strong [--ring-offset:2px]"
                 >
                   Annuler
@@ -2663,9 +2689,11 @@ export function Studio() {
                 <button
                   type="button"
                   onClick={confirmSignIn}
-                  className="focus-ring press h-10 rounded-[11px] bg-primary px-4 text-[13.5px] font-medium text-primary-foreground hover:bg-ink-2 [--ring-offset:3px]"
+                  disabled={signingIn}
+                  className="focus-ring press flex h-10 items-center gap-2 rounded-[11px] bg-primary px-4 text-[13.5px] font-medium text-primary-foreground hover:bg-ink-2 disabled:opacity-70 [--ring-offset:3px]"
                 >
-                  Se connecter et générer
+                  {signingIn && <Loader2 size={14} strokeWidth={2} className="animate-spin" />}
+                  {signingIn ? "En attente de la connexion…" : "Se connecter et générer"}
                 </button>
               </div>
             </div>

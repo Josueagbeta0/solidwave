@@ -11,7 +11,11 @@ const faqs = [
   },
   {
     q: "Mes fichiers sont-ils envoyés quelque part ?",
-    a: "Non. La vectorisation, la modélisation et le rendu tournent dans votre navigateur, sur votre carte graphique. Rien n’est envoyé à un serveur.",
+    a: "Les logos et le mode photo « Rapide » restent entièrement dans votre navigateur : rien n’est envoyé. Seul le mode photo « IA 360° » envoie votre photo, le temps de la génération, aux démos publiques des modèles ouverts TRELLIS hébergées par Hugging Face, via votre propre compte gratuit.",
+  },
+  {
+    q: "Puis-je partir d’une photo plutôt que d’un logo ?",
+    a: "Oui, c’est la nouveauté de la version 2.0. Importez la photo d’un objet (vêtement, voiture, animal…) : le mode Rapide en fait un relief sur votre appareil, sans limite ; le mode IA 360° génère l’objet complet, visible sous tous les angles, en une à deux minutes, avec quelques essais gratuits par jour.",
   },
   {
     q: "Quelle taille pour les rendus PNG ?",

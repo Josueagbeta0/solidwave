@@ -12,20 +12,20 @@ const steps = [
   {
     id: "import",
     icon: FileUp,
-    title: "Déposez votre logo",
-    body: "Un SVG, ou un PNG, JPG, WebP. Glissez-le, collez-le ou choisissez-le : rien n’est envoyé, tout reste dans votre navigateur.",
+    title: "Déposez un logo ou une photo",
+    body: "Un logo en SVG, PNG, JPG ou WebP, ou la photo d’un objet : un vêtement, une voiture, un animal. Glissez-la, collez-la ou choisissez-la.",
   },
   {
     id: "trace",
     icon: ScanLine,
-    title: "Le contour est tracé",
-    body: "Les tracés SVG sont lus tels quels ; les images sont vectorisées en contours nets, trous et détails fins compris.",
+    title: "Le sujet est détouré",
+    body: "Les logos sont vectorisés en contours nets, trous et détails fins compris. Sur une photo, l’objet est détouré automatiquement.",
   },
   {
     id: "extrude",
     icon: Layers3,
     title: "Il prend du volume",
-    body: "Extrudé, empilé, gonflé ou en relief, en vrais millimètres, avec des arêtes arrondies ou chanfreinées.",
+    body: "Logo extrudé, gonflé ou en relief, en vrais millimètres. Photo : relief rapide sur votre appareil, ou objet complet à 360° généré par IA.",
   },
   {
     id: "dress",
@@ -478,7 +478,7 @@ export function HowItWorks() {
         className="mt-14 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-stretch gap-5 max-tab:grid-cols-1"
       >
         {/* Steps */}
-        <ol className="flex flex-col gap-2 max-tab:order-2" style={{ "--step-ms": `${STEP_MS}ms` } as CSSProperties}>
+        <ol className="flex flex-col gap-2 max-tab:hidden" style={{ "--step-ms": `${STEP_MS}ms` } as CSSProperties}>
           {steps.map((item, index) => {
             const isActive = index === active;
             const Icon = item.icon;
@@ -553,6 +553,44 @@ export function HowItWorks() {
             <Defs />
             {visuals[step.id]()}
           </svg>
+          {/* Phones: the description sits under the preview it explains, with step tabs. */}
+          <div className="relative hidden border-t border-hairline bg-surface p-4 max-tab:block">
+            <div className="flex gap-1.5" role="tablist" aria-label="Étapes">
+              {steps.map((item, index) => {
+                const Icon = item.icon;
+                const isActive = index === active;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={item.title}
+                    onClick={() => select(index)}
+                    className={`focus-ring grid h-9 flex-1 place-items-center rounded-[10px] transition-colors duration-300 [--ring-offset:2px] ${
+                      isActive ? "bg-accent text-white" : "bg-well text-ink-3"
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={1.8} />
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3.5 flex items-baseline gap-2">
+              <span className="font-mono text-[11px] text-ink-4">0{active + 1}</span>
+              <span className="text-[16px] font-semibold tracking-[-0.02em] text-ink">{step.title}</span>
+            </p>
+            <p key={step.id} className="animate-rise mt-1.5 text-[14px] leading-[1.55] text-ink-3 [text-wrap:pretty]">
+              {step.body}
+            </p>
+            <span aria-hidden="true" className="mt-3.5 block h-[2px] overflow-hidden rounded-full bg-well-strong">
+              {autoplay ? (
+                <span key={cycle} className="how-progress block h-full bg-accent" onAnimationEnd={next} />
+              ) : (
+                <span className="block h-full w-full bg-accent/40" />
+              )}
+            </span>
+          </div>
         </div>
       </Reveal>
     </section>

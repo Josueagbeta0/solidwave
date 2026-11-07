@@ -41,6 +41,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`font-display font-semibold tracking-[-0.045em] ${className}`}>
       SolidWave
+      <span className="ml-1.5 inline-block translate-y-[-1px] rounded-full bg-accent-soft px-1.5 py-px align-middle font-mono text-[0.62em] font-semibold tracking-normal text-accent">2.0</span>
     </span>
   );
 }

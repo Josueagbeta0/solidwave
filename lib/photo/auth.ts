@@ -48,8 +48,13 @@ export function signOut() {
   }
 }
 
-/** Opens the sign-in popup. Resolves with the session, or null if the popup was closed first. */
-export async function signIn(): Promise<GpuSession | null> {
+/**
+ * Opens the sign-in popup and resolves with the session once the popup stores it,
+ * or null when `signal` aborts / after 10 minutes. The provider's pages cut the
+ * popup's link to this window (popup.closed reads true right away), so the
+ * session is watched in shared storage instead.
+ */
+export async function signIn(signal?: AbortSignal): Promise<GpuSession | null> {
   // Opened synchronously, inside the click: popup blockers only allow that.
   const width = 520;
   const height = 720;
@@ -78,20 +83,21 @@ export async function signIn(): Promise<GpuSession | null> {
   });
   popup.location.href = `${AUTHORIZE}?${params}`;
 
+  const before = readSession()?.token ?? null;
   return new Promise((resolve) => {
+    const started = Date.now();
     const finish = (session: GpuSession | null) => {
-      window.removeEventListener("storage", onStorage);
       window.clearInterval(watch);
+      signal?.removeEventListener("abort", onAbort);
       resolve(session);
     };
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === STORE && event.newValue) finish(readSession());
-    };
-    window.addEventListener("storage", onStorage);
-    // Popup closed without finishing: give up (but pick up a session that just landed).
+    const onAbort = () => finish(null);
+    signal?.addEventListener("abort", onAbort);
     const watch = window.setInterval(() => {
-      if (popup.closed) window.setTimeout(() => finish(readSession()), 300);
-    }, 500);
+      const session = readSession();
+      if (session && session.token !== before) finish(session);
+      else if (Date.now() - started > 10 * 60 * 1000) finish(null);
+    }, 600);
   });
 }
 
