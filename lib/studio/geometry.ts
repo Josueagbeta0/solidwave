@@ -46,6 +46,8 @@ export type BuiltIcon = {
   artworkCrop: ArtworkCrop | null;
   /** Outer silhouette loops (no holes) in UV space, 0–1 with v up. */
   outlineUV: [number, number][][];
+  /** Objects made from a photo carry their own colour texture (mesh UVs). */
+  photoMap?: THREE.Texture | null;
 };
 
 type FlatShape = {

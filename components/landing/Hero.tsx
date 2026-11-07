@@ -5,7 +5,7 @@ import { GithubIcon } from "@/components/icons";
 import { heroStageCss } from "@/lib/stage";
 import { site } from "@/lib/site";
 
-const promises = ["Gratuit, sans compte", "100 % dans le navigateur", "Open source"];
+const promises = ["Gratuit", "Logos traités dans le navigateur", "Open source"];
 
 export function Hero() {
   return (
@@ -30,9 +30,14 @@ export function Hero() {
             rel="noopener noreferrer"
             className="focus-ring group animate-rise inline-flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-3.5 text-[13px] text-ink-3 shadow-pane transition-shadow duration-300 hover:shadow-float [--ring-offset:3px]"
           >
-            <span className="grid size-6 place-items-center rounded-full bg-ink font-mono text-[10px] font-semibold text-white transition-transform duration-500 ease-spring group-hover:rotate-[-8deg] group-hover:scale-110">
-              JA
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element -- tiny static mark, no optimisation needed */}
+            <img
+              src="/josue-agbeta.jpg"
+              alt=""
+              width={24}
+              height={24}
+              className="size-6 rounded-full bg-black object-contain p-[3px] transition-transform duration-500 ease-spring group-hover:rotate-[-8deg] group-hover:scale-110"
+            />
             Créé par <span className="font-medium text-ink">{site.author.name}</span>
             <ArrowUpRight
               size={13}
@@ -42,13 +47,13 @@ export function Hero() {
           </a>
 
           <h1 className="heading-hero animate-rise delay-1 mt-7 !text-[clamp(48px,6.6vw,100px)] max-tab:mx-auto max-tab:max-w-[12ch]">
-            Votre logo, en <span className="serif-accent">relief.</span>
+            Logos et objets, en <span className="serif-accent">relief.</span>
           </h1>
 
           <p className="text-lead animate-rise delay-2 mt-7 max-w-[46ch] max-tab:mx-auto">
-            Déposez un SVG ou un PNG : il devient un objet 3D à taille réelle, éclairé comme en studio
-            photo. Verre, chrome, or ou les couleurs mêmes de votre logo. Rendez-le, animez-le,
-            imprimez-le.
+            Déposez un logo ou la photo d’un objet : il devient un modèle 3D à taille réelle, éclairé
+            comme en studio photo. Nouveau : une photo suffit pour obtenir l’objet complet à 360°,
+            généré par IA. Rendez-le, animez-le, imprimez-le.
           </p>
 
           <div className="animate-rise delay-3 mt-9 flex flex-wrap items-center gap-3 max-tab:justify-center">

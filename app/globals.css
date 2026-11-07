@@ -629,3 +629,39 @@
     interpolate-size: allow-keywords;
   }
 }
+
+/* CTA card: grainy light gradient (transform only; reduced motion freezes it globally). */
+/* Each layer is a soft blob placed off-centre on an oversized square; rotating
+   the square sweeps the blob around the card, so the colours visibly mix. */
+.cta-swirl {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 180%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  will-change: transform;
+  animation: cta-orbit 16s linear infinite;
+}
+.cta-indigo {
+  background: radial-gradient(28% 28% at 30% 32%, #3414f0 0%, rgba(52, 20, 240, 0.75) 45%, transparent 100%);
+}
+.cta-violet {
+  background: radial-gradient(26% 26% at 68% 62%, #5b2cf0 0%, rgba(91, 44, 240, 0.6) 45%, transparent 100%);
+  animation-duration: 21s;
+  animation-direction: reverse;
+}
+.cta-shadow {
+  background: radial-gradient(22% 22% at 64% 30%, #020108 0%, rgba(2, 1, 8, 0.7) 45%, transparent 100%);
+  animation-duration: 25s;
+}
+@keyframes cta-orbit {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Film grain: one static SVG noise tile, no per-frame cost. */
+.cta-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
