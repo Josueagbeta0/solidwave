@@ -140,7 +140,7 @@ const materialFrom = (finish: Finish): MaterialSettings => {
     clearcoat: finish.clearcoat ?? (isGlass ? 0.4 : 0),
     attenuationColor: finish.attenuationColor ?? finish.color,
     attenuationDistance: finish.attenuationDistance ?? 100,
-    reliefUrl: null,
+    artworkUrl: null,
   };
 };
 
@@ -276,6 +276,7 @@ export function Studio() {
   const [vignette, setVignette] = useState(0.22);
   const [halo, setHalo] = useState(0);
   const [autoStage, setAutoStage] = useState(true);
+  const [logoColors, setLogoColors] = useState(false);
 
   const [rig, setRig] = useState("studio");
   const [lightAngle, setLightAngle] = useState(0);
@@ -315,9 +316,15 @@ export function Studio() {
   const haloColor = material.tint.length === 7 ? material.tint : "#2f5bff";
 
   // Automatic backdrop: follows the finish colour. Manual picks switch it off.
+  // With the logo's own colours, a neutral grey studio flatters any palette.
   const target = useMemo(
-    () => (autoStage ? autoBackdrop(material.tint, material.metalness, material.transmission) : { center: bgCenter, edge: bgEdge }),
-    [autoStage, material.tint, material.metalness, material.transmission, bgCenter, bgEdge],
+    () =>
+      !autoStage
+        ? { center: bgCenter, edge: bgEdge }
+        : logoColors
+          ? autoBackdrop("#9a9a9a", 0, 0)
+          : autoBackdrop(material.tint, material.metalness, material.transmission),
+    [autoStage, logoColors, material.tint, material.metalness, material.transmission, bgCenter, bgEdge],
   );
   // The displayed stage glides to its target instead of snapping.
   const [stage, setStage] = useState(target);
@@ -365,10 +372,10 @@ export function Studio() {
     grain,
   };
 
-  // Relief mode prints the source artwork on the front face.
+  // "Couleurs du logo" (and relief mode) paint the source artwork through the object.
   const renderMaterial = useMemo(
-    () => ({ ...material, reliefUrl: mode === "relief" ? fileUrl : null }),
-    [material, mode, fileUrl],
+    () => ({ ...material, artworkUrl: logoColors || mode === "relief" ? fileUrl : null }),
+    [material, mode, fileUrl, logoColors],
   );
 
   const icon = useMemo(() => {
@@ -916,7 +923,53 @@ export function Studio() {
 
   const materialPanel = (
     <>
-      <PanelSection title="Finition">
+      <section className="px-4 pb-1 pt-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={logoColors}
+          disabled={!trace}
+          onClick={() => setLogoColors((value) => !value)}
+          className={`focus-ring group/logo relative flex w-full items-center gap-3 overflow-hidden rounded-[14px] p-2.5 text-left transition-[box-shadow,background-color] duration-300 disabled:cursor-not-allowed disabled:opacity-50 [--ring-offset:2px] ${
+            logoColors
+              ? "bg-accent-soft shadow-[0_0_0_1.5px_var(--color-accent),0_8px_22px_-12px_#2f5bffaa]"
+              : "bg-well shadow-[inset_0_0_0_1px_var(--color-hairline)] hover:bg-well-strong"
+          }`}
+        >
+          <span className="relative grid size-11 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-surface shadow-raise">
+            {fileUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={fileUrl}
+                alt=""
+                className={`size-full object-contain p-1.5 transition-[filter,scale] duration-500 ease-spring group-hover/logo:scale-110 ${logoColors ? "" : "grayscale"}`}
+              />
+            ) : (
+              <Palette size={17} strokeWidth={1.7} className="text-ink-4" />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13px] font-semibold text-ink">Couleurs du logo</span>
+            <span className="block text-[11.5px] leading-[1.35] text-ink-3">
+              {logoColors ? "Motifs et couleurs de votre fichier, en volume." : "Garder les couleurs et motifs du fichier."}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
+              logoColors ? "bg-accent" : "bg-well-strong shadow-[inset_0_0_0_1px_var(--color-hairline)]"
+            }`}
+          >
+            <span
+              className={`absolute left-0 top-[3px] size-4 rounded-full bg-white shadow-sm transition-transform duration-300 ease-spring ${
+                logoColors ? "translate-x-[19px]" : "translate-x-[3px]"
+              }`}
+            />
+          </span>
+        </button>
+      </section>
+
+      <PanelSection title="Finition" hint={logoColors ? "Sert de vernis aux couleurs" : undefined}>
         <Segmented
           ariaLabel="Famille de finitions"
           value={finishGroup}
@@ -1011,6 +1064,7 @@ export function Studio() {
         </PanelSection>
       )}
 
+{!logoColors && (
       <PanelSection title="Couleur" collapsible defaultOpen={false}>
         <ColorField
           label={finishGroup === "metal" || finishGroup === "color" ? "Couleur de base" : "Teinte"}
@@ -1035,6 +1089,7 @@ export function Studio() {
           />
         )}
       </PanelSection>
+      )}
 
       <PanelSection title="Surface" collapsible defaultOpen={false}>
         {(finishGroup === "metal" || finishGroup === "color") && (

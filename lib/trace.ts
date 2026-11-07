@@ -22,7 +22,16 @@ export type TraceResult = {
   source: "vector" | "raster";
   flipY: boolean;
   field?: { data: Float32Array; width: number; height: number };
+  /**
+   * Where shape coordinates sit on the source image, so the artwork can be
+   * cropped to the exact outline: u = (x - originX) / width and
+   * v = yDown ? (y - originY) / height : (originY - y) / height, both 0–1 from
+   * the image's top-left corner.
+   */
+  frame?: ImageFrame;
 };
+
+export type ImageFrame = { originX: number; originY: number; width: number; height: number; yDown: boolean };
 
 export const defaultTraceOptions: TraceOptions = {
   mode: "auto",
@@ -88,6 +97,7 @@ export function svgToShapes(svgText: string): TraceResult | null {
   const size = box.getSize(new THREE.Vector2());
   if (size.x <= 0 || size.y <= 0) return null;
 
+  const viewBox = parseViewBox(text);
   return {
     shapes,
     colors,
@@ -97,6 +107,9 @@ export function svgToShapes(svgText: string): TraceResult | null {
     shapeCount: shapes.length,
     source: "vector",
     flipY: true,
+    frame: viewBox
+      ? { originX: viewBox.x, originY: viewBox.y, width: viewBox.width, height: viewBox.height, yDown: true }
+      : undefined,
   };
 }
 
@@ -479,6 +492,8 @@ function traceField(
     source: "raster",
     flipY: false,
     field: { data: field, width, height },
+    // Shapes are centred on the traced canvas, y up.
+    frame: { originX: -cx, originY: cy, width, height, yDown: false },
   };
 }
 
@@ -539,6 +554,19 @@ export async function rasterizeSvg(svgText: string): Promise<HTMLImageElement> {
   } finally {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+}
+
+/** The SVG's user-space rectangle (viewBox, or 0 0 width height). */
+function parseViewBox(svgText: string): { x: number; y: number; width: number; height: number } | null {
+  const match = svgText.match(/viewBox\s*=\s*["']([^"']+)["']/i);
+  if (match) {
+    const parts = match[1].trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts.every((n) => Number.isFinite(n)) && parts[2] > 0 && parts[3] > 0) {
+      return { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
+    }
+  }
+  const size = parseSvgSize(svgText);
+  return size && size.width > 0 && size.height > 0 ? { x: 0, y: 0, ...size } : null;
 }
 
 export function parseSvgSize(svgText: string): { width: number; height: number } | null {

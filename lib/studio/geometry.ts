@@ -33,12 +33,17 @@ export type BuildOptions = {
   edgeProfile?: EdgeProfile;
 };
 
+/** Part of the source image (0–1, from its top-left corner) that the object's UVs span. */
+export type ArtworkCrop = { u0: number; v0: number; u1: number; v1: number };
+
 export type BuiltIcon = {
   group: THREE.Group;
   meshes: THREE.Mesh[];
   size: THREE.Vector3;
   triangles: number;
   relief: boolean;
+  /** Where to crop the source artwork so it lands exactly on the outline; null if unknown. */
+  artworkCrop: ArtworkCrop | null;
 };
 
 type FlatShape = {
@@ -85,7 +90,19 @@ function normalizeShapes(
     return next;
   });
 
-  return { shapes, width: widthMm, height: heightMm };
+  return { shapes, width: widthMm, height: heightMm, box };
+}
+
+/** The source-image rectangle covered by the shapes' bounding box. */
+function cropFor(result: TraceResult, box: THREE.Box2): ArtworkCrop | null {
+  const frame = result.frame;
+  if (!frame || frame.width <= 0 || frame.height <= 0) return null;
+  const u = (x: number) => (x - frame.originX) / frame.width;
+  const v = (y: number) => (frame.yDown ? (y - frame.originY) / frame.height : (frame.originY - y) / frame.height);
+  // The top of the object is the smallest y for y-down sources, the largest otherwise.
+  const top = result.flipY ? box.min.y : box.max.y;
+  const bottom = result.flipY ? box.max.y : box.min.y;
+  return { u0: u(box.min.x), u1: u(box.max.x), v0: v(top), v1: v(bottom) };
 }
 
 function finishGeometry(geometry: THREE.BufferGeometry, smooth: boolean) {
@@ -137,17 +154,26 @@ function centerZ(geometry: THREE.BufferGeometry) {
   geometry.translate(0, 0, -center);
 }
 
-function applyFrontUV(geometry: THREE.BufferGeometry, width: number, height: number) {
+/**
+ * Projects the artwork straight through the object: caps show it exactly, and
+ * walls and bevels pick the colour just inside the outline at that point
+ * (pulled inward along their normal past the bevel), so the sides carry the
+ * logo's edge colours instead of whatever surrounds it in the image.
+ */
+function applyPlanarUV(geometry: THREE.BufferGeometry, width: number, height: number, inset: number) {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
-  const uv = geometry.getAttribute("uv");
-  if (!position || !normal || !uv) return;
+  if (!position || !normal) return;
+  const uv = new Float32Array(position.count * 2);
   for (let i = 0; i < position.count; i++) {
-    if (normal.getZ(i) > 0.35) {
-      uv.setXY(i, position.getX(i) / width + 0.5, position.getY(i) / height + 0.5);
-    }
+    const nx = normal.getX(i);
+    const ny = normal.getY(i);
+    const x = position.getX(i) - nx * inset;
+    const y = position.getY(i) - ny * inset;
+    uv[i * 2] = x / width + 0.5;
+    uv[i * 2 + 1] = y / height + 0.5;
   }
-  uv.needsUpdate = true;
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
 }
 
 function extrude(
@@ -169,7 +195,10 @@ function extrude(
     steps: 1,
   });
   centerZ(geometry);
-  return finishGeometry(geometry, smooth);
+  const finished = finishGeometry(geometry, smooth);
+  // Walls sit outside the outline by this much (see applyPlanarUV).
+  finished.userData.bevelSize = safeBevel > 0.01 ? safeBevel * 0.85 : 0;
+  return finished;
 }
 
 export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon {
@@ -195,12 +224,16 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
       size: new THREE.Vector3(),
       triangles: 0,
       relief: false,
+      artworkCrop: null,
     };
   }
 
   const { shapes, width, height } = normalized;
+  // Sample a little inside the outline to step off the artwork's anti-aliased edge.
+  const margin = Math.max(width, height) * 0.004 + 0.15;
 
   const add = (geometry: THREE.BufferGeometry, z = 0) => {
+    applyPlanarUV(geometry, width, height, ((geometry.userData.bevelSize as number | undefined) ?? 0) + margin);
     const material = new THREE.MeshPhysicalMaterial();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.z = z;
@@ -230,7 +263,6 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
     add(geometry);
   } else if (options.mode === "relief") {
     const geometry = extrude(shapes, depth * 0.55, Math.min(edge, depth * 0.28), seg(3));
-    applyFrontUV(geometry, width, height);
     add(geometry);
   } else {
     const geometry = extrude(shapes, depth, edge, seg(5));
@@ -257,18 +289,15 @@ export function buildIcon(result: TraceResult, options: BuildOptions): BuiltIcon
     size,
     triangles: Math.round(triangles),
     relief: options.mode === "relief",
+    artworkCrop: cropFor(result, normalized.box),
   };
 }
 
 export function disposeIcon(icon: BuiltIcon | null) {
   if (!icon) return;
   icon.group.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      object.geometry.dispose();
-      const material = object.material;
-      if (Array.isArray(material)) material.forEach((item) => item.dispose());
-      else material.dispose();
-    }
+    // Only geometry: the canvas owns the (shared) surface material.
+    if (object instanceof THREE.Mesh) object.geometry.dispose();
   });
   icon.meshes.length = 0;
 }

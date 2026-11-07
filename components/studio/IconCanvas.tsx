@@ -25,11 +25,13 @@ import {
   ToneMappingMode,
   type EffectComposer as EffectComposerImpl,
 } from "postprocessing";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { GLTFExporter, STLExporter } from "three-stdlib";
 import { ArrayBufferTarget, Muxer } from "mp4-muxer";
 import { createMaterial } from "@/lib/studio/materials";
+import { createArtworkTexture } from "@/lib/studio/artwork";
+import { loadHtmlImage } from "@/lib/trace";
 import { rigById, type LightRig as LightRigDef } from "@/lib/studio/lighting";
 import { createFloorFade, FLOOR_SIZE } from "@/lib/studio/floor";
 import type { BuiltIcon } from "@/lib/studio/geometry";
@@ -1064,31 +1066,43 @@ export function IconCanvas({
   paintStage,
   stageKey,
 }: IconCanvasProps) {
-  const [reliefTexture, setReliefTexture] = useState<THREE.Texture | null>(null);
+  const [artworkTexture, setArtworkTexture] = useState<THREE.Texture | null>(null);
   const composerRef = useRef<EffectComposerImpl | null>(null);
   const stageRef = useRef<StageHandle | null>(null);
   const spinRef = useRef<number | null>(null);
   const [recording, setRecording] = useState(false);
   const budget = qualityBudget[settings.quality];
 
+  // The logo's own colours, cropped to the outline of the current object.
+  const artworkCrop = icon?.artworkCrop ?? null;
+  const cropKey = artworkCrop
+    ? `${artworkCrop.u0.toFixed(5)}-${artworkCrop.v0.toFixed(5)}-${artworkCrop.u1.toFixed(5)}-${artworkCrop.v1.toFixed(5)}`
+    : "full";
   useEffect(() => {
-    if (!material.reliefUrl || !icon?.relief) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear the texture when relief is turned off
-      setReliefTexture(null);
+    const url = material.artworkUrl;
+    if (!url || !icon) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear the texture when the option is turned off
+      setArtworkTexture(null);
       return;
     }
     let active = true;
-    const texture = new THREE.TextureLoader().load(material.reliefUrl, (loaded) => {
-      loaded.colorSpace = THREE.SRGBColorSpace;
-      loaded.anisotropy = 8;
-      loaded.needsUpdate = true;
-      if (active) setReliefTexture(loaded);
-    });
+    let texture: THREE.Texture | null = null;
+    loadHtmlImage(url)
+      .then((image) => {
+        if (!active) return;
+        texture = createArtworkTexture(image, artworkCrop);
+        setArtworkTexture(texture);
+      })
+      .catch(() => {
+        if (active) setArtworkTexture(null);
+      });
     return () => {
       active = false;
-      texture.dispose();
+      texture?.dispose();
     };
-  }, [material.reliefUrl, icon?.relief]);
+    // The crop is tracked through its key: a rebuilt icon with the same outline keeps the texture.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [material.artworkUrl, cropKey, !!icon]);
 
   const threeMaterial = useMemo(
     () =>
@@ -1104,7 +1118,7 @@ export function IconCanvas({
         clearcoat: material.clearcoat,
         attenuationColor: material.attenuationColor,
         attenuationDistance: material.attenuationDistance,
-        reliefMap: icon?.relief ? reliefTexture : null,
+        artworkMap: material.artworkUrl ? artworkTexture : null,
       }),
     [
       material.finish,
@@ -1119,15 +1133,23 @@ export function IconCanvas({
       material.clearcoat,
       material.attenuationColor,
       material.attenuationDistance,
-      icon?.relief,
-      reliefTexture,
+      material.artworkUrl,
+      artworkTexture,
     ],
   );
 
-  useEffect(() => {
-    if (!icon) return;
-    for (const mesh of icon.meshes) mesh.material = threeMaterial;
-  }, [icon, threeMaterial]);
+  // One material object for the life of the canvas: new settings are copied
+  // into it instead of swapping materials. drei's AccumulativeShadows records
+  // each mesh's material when it resets and puts that object back after every
+  // accumulation frame, so a swapped-in material would silently be reverted.
+  const [surface] = useState(() => new THREE.MeshPhysicalMaterial());
+  useLayoutEffect(() => {
+    surface.copy(threeMaterial);
+    surface.needsUpdate = true;
+  }, [surface, threeMaterial]);
+  useEffect(() => () => surface.dispose(), [surface]);
+  // Assigned during render so it is in place before the shadow pass records it.
+  if (icon) for (const mesh of icon.meshes) if (mesh.material !== surface) mesh.material = surface;
 
   useEffect(() => () => threeMaterial.dispose(), [threeMaterial]);
 
@@ -1163,7 +1185,7 @@ export function IconCanvas({
       />
       <RendererSettings toneMap={settings.toneMap} post={budget.post} />
       <Exposure exposure={settings.exposure} />
-      <EnvBinding material={threeMaterial} exposure={settings.exposure} />
+      <EnvBinding material={surface} exposure={settings.exposure} />
       <CameraRig view={settings.view} lens={settings.lens} icon={icon} fitTick={fitTick} />
       <LightRig settings={settings} resolution={budget.env} />
       <StageBackdrop paint={paintStage} paintKey={stageKey} handleRef={stageRef} />

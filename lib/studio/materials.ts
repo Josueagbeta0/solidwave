@@ -447,7 +447,8 @@ export type MaterialOverrides = {
   iridescenceIOR?: number;
   tint?: string;
   tintDepth?: number;
-  reliefMap?: THREE.Texture | null;
+  /** The logo's own colours, projected through the object (see lib/studio/artwork.ts). */
+  artworkMap?: THREE.Texture | null;
 };
 
 export function createMaterial(
@@ -488,14 +489,32 @@ export function createMaterial(
   // material and applies this (times exposure) itself — see EnvBinding.
   material.userData.envBase = finish.envMapIntensity ?? 1.2;
 
-  if (overrides.reliefMap) {
-    material.map = overrides.reliefMap;
+  if (overrides.artworkMap) {
+    // The logo's colours replace the tint; the finish still sets the surface
+    // (gloss, metal, lacquer). The object turns opaque so colours read true.
+    material.map = overrides.artworkMap;
     material.color.set("#ffffff");
-    material.metalness = 0.05;
-    material.roughness = 0.42;
     material.transmission = 0;
+    material.thickness = 0;
+    material.dispersion = 0;
     material.transparent = false;
     material.side = THREE.FrontSide;
+    if (isGlass) {
+      // Glass and liquids become a glossy enamel under a clear lacquer.
+      material.metalness = 0;
+      material.roughness = Math.max(material.roughness, 0.22);
+      material.clearcoat = Math.max(material.clearcoat, 0.45);
+      material.clearcoatRoughness = 0.06;
+    } else if (finish.group === "metal") {
+      // A pure metal would tint its reflections and turn whites grey: use a
+      // lacquered metallic paint so the logo's colours stay true.
+      material.metalness = Math.min(material.metalness, 0.4);
+      material.roughness = Math.max(material.roughness, 0.28);
+      material.clearcoat = 1;
+      material.clearcoatRoughness = 0.04;
+    }
+    // Softer reflections: the studio's bright panels would wash the colours out.
+    material.userData.envBase = Math.min(material.userData.envBase as number, 0.75);
   }
 
   return material;

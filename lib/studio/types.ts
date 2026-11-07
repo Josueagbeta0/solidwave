@@ -47,7 +47,8 @@ export type MaterialSettings = {
   clearcoat: number;
   attenuationColor: string;
   attenuationDistance: number;
-  reliefUrl: string | null;
+  /** Source artwork to paint on the object ("Couleurs du logo" or relief mode), or null. */
+  artworkUrl: string | null;
 };
 
 export type SceneSettings = {
