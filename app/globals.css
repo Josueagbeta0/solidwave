@@ -633,9 +633,9 @@
 /* CTA card: a slow liquid of blues (transform only; reduced motion freezes it globally). */
 .aurora-blob {
   position: absolute;
-  width: 52%;
+  width: 64%;
   aspect-ratio: 1;
-  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--c) 0%, color-mix(in srgb, var(--c) 70%, transparent) 40%, color-mix(in srgb, var(--c) 25%, transparent) 70%, transparent 100%);
   animation: aurora-drift 36s ease-in-out infinite alternate;
   will-change: transform;
 }

@@ -6,15 +6,16 @@ import { Reveal } from "@/components/motion";
 export function Cta() {
   return (
     <section className="frame pb-24 pt-[var(--section)]" aria-labelledby="cta-title">
-      <Reveal className="relative isolate overflow-hidden rounded-[32px] bg-primary px-8 py-24 text-center text-primary-foreground max-fold:rounded-[24px] max-fold:px-6 max-fold:py-16">
+      <Reveal className="relative isolate overflow-hidden [contain:paint] rounded-[32px] bg-primary px-8 py-24 text-center text-primary-foreground max-fold:rounded-[24px] max-fold:px-6 max-fold:py-16">
         {/* Oversized ghost of the mark, lit from above by a soft accent glow. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
           {/* Slowly drifting colour fields that blend into each other: the studio's "magic". */}
-          <div className="absolute inset-[-25%] opacity-70 blur-[90px] max-fold:blur-[60px]">
-            <span className="aurora-blob bg-[#2f5bff]" style={{ left: "6%", top: "30%", animationDuration: "34s" }} />
-            <span className="aurora-blob bg-[#1e3a8a]" style={{ left: "48%", top: "8%", animationDuration: "41s", animationDelay: "-12s" }} />
-            <span className="aurora-blob bg-[#5b7cff]" style={{ left: "46%", top: "50%", animationDuration: "38s", animationDelay: "-20s" }} />
-            <span className="aurora-blob bg-[#6d5bd0] opacity-50" style={{ left: "22%", top: "56%", animationDuration: "45s", animationDelay: "-7s" }} />
+          {/* Pre-softened radial gradients, moved by transform only: no blur filter to recompute each frame. */}
+          <div className="absolute inset-[-20%] opacity-95">
+            <span className="aurora-blob [--c:#2f5bff]" style={{ left: "0%", top: "26%", animationDuration: "34s" }} />
+            <span className="aurora-blob [--c:#1e3a8a]" style={{ left: "44%", top: "0%", animationDuration: "41s", animationDelay: "-12s" }} />
+            <span className="aurora-blob [--c:#5b7cff]" style={{ left: "42%", top: "44%", animationDuration: "38s", animationDelay: "-20s" }} />
+            <span className="aurora-blob opacity-60 [--c:#6d5bd0]" style={{ left: "16%", top: "50%", animationDuration: "45s", animationDelay: "-7s" }} />
           </div>
           {/* Fine colour dust drifting over the liquid. */}
           <div className="absolute inset-0 [mask-image:radial-gradient(75%_70%_at_50%_50%,#000,transparent)]">
