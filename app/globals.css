@@ -630,19 +630,33 @@
   }
 }
 
-/* CTA card: drifting colour fields (transform only; reduced motion freezes them globally). */
+/* CTA card: a slow liquid of blues (transform only; reduced motion freezes it globally). */
 .aurora-blob {
   position: absolute;
-  width: 46%;
+  width: 52%;
   aspect-ratio: 1;
   border-radius: 9999px;
-  mix-blend-mode: screen;
-  animation: aurora-drift 20s ease-in-out infinite alternate;
+  animation: aurora-drift 36s ease-in-out infinite alternate;
   will-change: transform;
 }
 @keyframes aurora-drift {
-  0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
-  33% { transform: translate3d(18%, 12%, 0) scale(1.18) rotate(40deg); }
-  66% { transform: translate3d(-14%, 20%, 0) scale(0.9) rotate(-30deg); }
-  100% { transform: translate3d(10%, -16%, 0) scale(1.1) rotate(20deg); }
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(16%, -10%, 0) scale(1.15); }
+  100% { transform: translate3d(-12%, 12%, 0) scale(0.92); }
+}
+/* Sparse, soft specks of light that drift upward like suspended dust. */
+.color-dust {
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 22%, #c7d4ff 50%, transparent 52%),
+    radial-gradient(1px 1px at 34% 68%, #ffffff 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 58% 36%, #a9b8ff 50%, transparent 52%),
+    radial-gradient(1px 1px at 76% 78%, #ffffff 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 88% 18%, #c7d4ff 50%, transparent 52%),
+    radial-gradient(1px 1px at 22% 88%, #b9c6ff 50%, transparent 52%);
+  background-size: 260px 260px;
+  animation: dust-rise 60s linear infinite;
+  will-change: transform;
+}
+@keyframes dust-rise {
+  to { transform: translate3d(0, -260px, 0); }
 }

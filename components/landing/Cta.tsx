@@ -10,12 +10,15 @@ export function Cta() {
         {/* Oversized ghost of the mark, lit from above by a soft accent glow. */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
           {/* Slowly drifting colour fields that blend into each other: the studio's "magic". */}
-          <div className="aurora absolute inset-[-20%] opacity-80 blur-[70px] max-fold:blur-[50px]">
-            <span className="aurora-blob bg-[#2f5bff]" style={{ left: "8%", top: "10%", animationDuration: "19s" }} />
-            <span className="aurora-blob bg-[#8b5cf6]" style={{ left: "52%", top: "4%", animationDuration: "23s", animationDelay: "-6s" }} />
-            <span className="aurora-blob bg-[#ec4899]" style={{ left: "60%", top: "48%", animationDuration: "21s", animationDelay: "-11s" }} />
-            <span className="aurora-blob bg-[#06b6d4]" style={{ left: "14%", top: "52%", animationDuration: "25s", animationDelay: "-3s" }} />
-            <span className="aurora-blob bg-[#f59e0b] !size-[34%] opacity-60" style={{ left: "36%", top: "30%", animationDuration: "27s", animationDelay: "-15s" }} />
+          <div className="absolute inset-[-25%] opacity-70 blur-[90px] max-fold:blur-[60px]">
+            <span className="aurora-blob bg-[#2f5bff]" style={{ left: "6%", top: "30%", animationDuration: "34s" }} />
+            <span className="aurora-blob bg-[#1e3a8a]" style={{ left: "48%", top: "8%", animationDuration: "41s", animationDelay: "-12s" }} />
+            <span className="aurora-blob bg-[#5b7cff]" style={{ left: "46%", top: "50%", animationDuration: "38s", animationDelay: "-20s" }} />
+            <span className="aurora-blob bg-[#6d5bd0] opacity-50" style={{ left: "22%", top: "56%", animationDuration: "45s", animationDelay: "-7s" }} />
+          </div>
+          {/* Fine colour dust drifting over the liquid. */}
+          <div className="absolute inset-0 [mask-image:radial-gradient(75%_70%_at_50%_50%,#000,transparent)]">
+            <div className="color-dust absolute inset-x-0 top-0 h-[calc(100%+260px)] opacity-50" />
           </div>
           {/* Keeps the text readable over the colours. */}
           <div className="absolute inset-0 bg-[radial-gradient(60%_55%_at_50%_50%,rgba(12,10,9,.55),rgba(12,10,9,.15))]" />
