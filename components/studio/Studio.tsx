@@ -263,6 +263,7 @@ export function Studio() {
   const [panelOpen, setPanelOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [stats, setStats] = useState({ width: 100, height: 100, depth: 14, triangles: 0 });
 
@@ -1684,7 +1685,8 @@ export function Studio() {
         </div>
       </header>
 
-      <div className="relative flex min-h-0 flex-1 gap-3 px-3 pb-3 max-tab:px-2 max-tab:pb-2 max-fold:p-0">
+      {/* On phones and tablets the screen splits: the stage stays visible above the settings. */}
+      <div className="relative flex min-h-0 flex-1 gap-3 px-3 pb-3 max-tab:flex-col max-tab:gap-2 max-tab:px-2 max-tab:pb-2 max-fold:gap-0 max-fold:p-0">
         {/* Viewport */}
         <main
           className="relative min-w-0 flex-1 overflow-hidden rounded-[20px] shadow-[inset_0_0_0_1px_rgba(15,17,22,0.06)] max-fold:rounded-none"
@@ -1779,7 +1781,11 @@ export function Studio() {
 
           {/* Camera toolbar */}
           {trace && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-3 max-tab:bottom-3">
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-3 max-tab:bottom-3 ${
+                panelOpen && sheetExpanded ? "max-tab:hidden" : ""
+              }`}
+            >
               <div
                 className={`animate-float-in pointer-events-auto flex items-center gap-1 rounded-[14px] p-1 [animation-delay:140ms] ${overlay}`}
               >
@@ -1962,7 +1968,7 @@ export function Studio() {
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
-              className="focus-ring glass press animate-float-in absolute bottom-[72px] right-3 z-20 hidden h-10 items-center gap-2 rounded-[12px] px-4 text-[13px] font-medium text-ink [--ring-offset:2px] max-tab:flex"
+              className="focus-ring glass press animate-float-in absolute bottom-[64px] right-3 z-20 hidden h-10 items-center gap-2 rounded-[12px] px-4 text-[13px] font-medium text-ink [--ring-offset:2px] max-tab:flex"
             >
               <SlidersHorizontal size={15} strokeWidth={1.7} />
               Modifier
@@ -1972,8 +1978,31 @@ export function Studio() {
 
         {/* Inspector */}
         {panelOpen && (
-          <aside className="flex w-[348px] shrink-0 animate-[panel-in_.38s_cubic-bezier(0.23,1,0.32,1)_both] flex-col overflow-hidden rounded-[20px] bg-surface shadow-pane max-desk:w-[316px] max-tab:absolute max-tab:inset-x-0 max-tab:bottom-0 max-tab:z-30 max-tab:h-[64dvh] max-tab:w-auto max-tab:rounded-b-none max-tab:rounded-t-[22px] max-tab:shadow-float">
-            <span aria-hidden="true" className="mx-auto mt-2 hidden h-1 w-9 shrink-0 rounded-full bg-hairline-strong max-tab:block" />
+          <aside
+            className={`flex w-[348px] shrink-0 animate-[panel-in_.38s_cubic-bezier(0.23,1,0.32,1)_both] flex-col overflow-hidden rounded-[20px] bg-surface shadow-pane transition-[height] duration-300 ease-out max-desk:w-[316px] max-tab:w-auto max-tab:rounded-[18px] max-fold:rounded-none max-fold:rounded-t-[20px] max-fold:shadow-[0_-8px_24px_-16px_#0c0a0940] ${
+              sheetExpanded ? "max-tab:h-[70dvh]" : "max-tab:h-[44dvh]"
+            }`}
+          >
+            {/* Sheet handle (phones and tablets): grow or shrink the settings, or hide them. */}
+            <div className="hidden shrink-0 items-center justify-between px-2 pt-1.5 max-tab:flex">
+              <span className="w-9" />
+              <button
+                type="button"
+                onClick={() => setSheetExpanded((value) => !value)}
+                aria-label={sheetExpanded ? "Réduire les réglages" : "Agrandir les réglages"}
+                className="focus-ring flex h-7 w-20 items-center justify-center rounded-full [--ring-offset:0px]"
+              >
+                <span className="h-1 w-9 rounded-full bg-hairline-strong" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelOpen(false)}
+                aria-label="Masquer les réglages"
+                className="focus-ring grid size-9 place-items-center rounded-full text-ink-3 hover:bg-well-strong hover:text-ink [--ring-offset:0px]"
+              >
+                <ChevronDown size={18} strokeWidth={1.8} />
+              </button>
+            </div>
             {/* Tabs */}
             <div className="shrink-0 p-2 pb-0">
               <div role="tablist" aria-label="Réglages du studio" className="relative grid grid-cols-5 rounded-[14px] bg-well p-1">
@@ -2049,14 +2078,6 @@ export function Studio() {
         </div>
       )}
 
-      {panelOpen && (
-        <button
-          type="button"
-          aria-label="Fermer le panneau"
-          onClick={() => setPanelOpen(false)}
-          className="fixed inset-0 z-20 hidden bg-black/25 max-tab:block"
-        />
-      )}
     </div>
   );
 }
